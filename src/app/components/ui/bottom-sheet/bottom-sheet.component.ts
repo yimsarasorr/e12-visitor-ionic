@@ -1,13 +1,13 @@
 import { Component, inject, OnInit, ElementRef, ViewChild, Renderer2 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { IonButton, IonIcon, IonBadge, IonList, IonItem, IonLabel } from '@ionic/angular/standalone';
 import { BottomSheetService, SheetData } from '../../../services/bottom-sheet.service';
 import { AccessListComponent } from '../../access-list/access-list.component';
-import { ButtonModule } from 'primeng/button'; // เพิ่ม ButtonModule สำหรับ List
 
 @Component({
   selector: 'app-bottom-sheet',
   standalone: true,
-  imports: [CommonModule, AccessListComponent, ButtonModule],
+  imports: [CommonModule, AccessListComponent, IonButton, IonIcon, IonBadge, IonList, IonItem, IonLabel],
   templateUrl: './bottom-sheet.component.html',
   styleUrls: ['./bottom-sheet.component.css']
 })

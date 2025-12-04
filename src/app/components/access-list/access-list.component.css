@@ -78,7 +78,11 @@
 }
 
 .status-badge.unlocked {
-  background-color: #2563eb; /* สีน้ำเงินตามดีไซน์ */
+  background-color: #2563eb;
+}
+
+.status-badge ion-icon {
+  font-size: 1rem;
 }
 
 .distance-text {
@@ -101,7 +105,8 @@
   color: #1e293b;
 }
 
-.item-meta, .item-hours {
+.item-meta,
+.item-hours {
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -109,8 +114,9 @@
   color: #64748b;
 }
 
-.item-meta i, .item-hours i {
-  font-size: 0.8rem;
+.item-meta ion-icon,
+.item-hours ion-icon {
+  font-size: 1rem;
 }
 
 /* Col 3: Action */
@@ -124,7 +130,7 @@
 .access-text {
   font-size: 0.8rem;
   font-weight: 600;
-  color: #2563eb; /* สีน้ำเงิน */
+  color: #2563eb;
 }
 
 .item-bookmark {
@@ -154,7 +160,7 @@
   margin-bottom: 1rem;
 }
 
-.empty-icon i {
+.empty-icon ion-icon {
   font-size: 1.5rem;
   color: #94a3b8;
 }

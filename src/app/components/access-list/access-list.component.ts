@@ -1,6 +1,7 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Observable, switchMap, map, startWith, of } from 'rxjs'; // *อย่าลืม of*
+import { IonIcon } from '@ionic/angular/standalone';
 import { FloorplanInteractionService } from '../../services/floorplan/floorplan-interaction.service';
 import { BuildingDataService } from '../../services/building-data.service';
 import { Asset } from '../../services/auth.service';
@@ -8,7 +9,7 @@ import { Asset } from '../../services/auth.service';
 @Component({
   selector: 'app-access-list',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, IonIcon],
   templateUrl: './access-list.component.html',
   styleUrls: ['./access-list.component.css']
 })

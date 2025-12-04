@@ -15,12 +15,23 @@ import {
   ChangeDetectionStrategy
 } from '@angular/core';
 import * as THREE from 'three';
-import { ButtonModule } from 'primeng/button';
 import { CommonModule, DecimalPipe } from '@angular/common';
-import { DialogModule } from 'primeng/dialog';
-import { SelectModule } from 'primeng/select';
 import { FormsModule } from '@angular/forms';
 import { BehaviorSubject, Subscription } from 'rxjs';
+import {
+  IonButton,
+  IonButtons,
+  IonContent,
+  IonHeader,
+  IonIcon,
+  IonItem,
+  IonLabel,
+  IonModal,
+  IonSelect,
+  IonSelectOption,
+  IonTitle,
+  IonToolbar
+} from '@ionic/angular/standalone';
 
 import { ThreeSceneService } from '../../services/floorplan/three-scene.service';
 import { FloorplanBuilderService } from '../../services/floorplan/floorplan-builder.service';
@@ -31,7 +42,23 @@ import { JoystickComponent } from '../joystick/joystick.component';
 @Component({
   selector: 'app-floor-plan',
   standalone: true,
-  imports: [CommonModule, ButtonModule, DialogModule, SelectModule, FormsModule, JoystickComponent],
+  imports: [
+    CommonModule,
+    FormsModule,
+    JoystickComponent,
+    IonButton,
+    IonButtons,
+    IonContent,
+    IonHeader,
+    IonIcon,
+    IonItem,
+    IonLabel,
+    IonModal,
+    IonSelect,
+    IonSelectOption,
+    IonTitle,
+    IonToolbar
+  ],
   providers: [DecimalPipe],
   templateUrl: './floor-plan.component.html',
   styleUrls: ['./floor-plan.component.css'],
