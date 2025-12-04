@@ -1,18 +1,28 @@
-import { Component, inject, OnInit, ElementRef, ViewChild, Renderer2 } from '@angular/core';
+import { Component, inject, ElementRef, ViewChild, Renderer2, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonButton, IonIcon, IonBadge, IonList, IonItem, IonLabel } from '@ionic/angular/standalone';
+import { IonicModule } from '@ionic/angular';
 import { BottomSheetService, SheetData } from '../../../services/bottom-sheet.service';
 import { AccessListComponent } from '../../access-list/access-list.component';
+
+// 1. Import addIcons และชื่อ Icon ที่ใช้
+import { addIcons } from 'ionicons';
+import { 
+  business, 
+  businessOutline, 
+  close, 
+  cubeOutline, 
+  navigateOutline, 
+  chevronForwardOutline 
+} from 'ionicons/icons';
 
 @Component({
   selector: 'app-bottom-sheet',
   standalone: true,
-  imports: [CommonModule, AccessListComponent, IonButton, IonIcon, IonBadge, IonList, IonItem, IonLabel],
+  imports: [CommonModule, IonicModule, AccessListComponent],
   templateUrl: './bottom-sheet.component.html',
-  styleUrls: ['./bottom-sheet.component.css']
+  styleUrls: ['./bottom-sheet.component.scss']
 })
 export class BottomSheetComponent implements OnInit {
-  // ✅ เปลี่ยนเป็น public เพื่อให้ HTML เข้าถึงได้
   public bottomSheetService = inject(BottomSheetService);
   private renderer = inject(Renderer2);
 
@@ -25,13 +35,23 @@ export class BottomSheetComponent implements OnInit {
   private startHeight = 0;
   private isDragging = false;
 
+  constructor() {
+    // 2. Register Icon ทั้งหมดที่ใช้ใน HTML ของหน้านี้
+    addIcons({ 
+      business, 
+      businessOutline, 
+      close, 
+      cubeOutline, 
+      navigateOutline, 
+      chevronForwardOutline 
+    });
+  }
+
   ngOnInit() {
     // 1. Subscribe Content
     this.bottomSheetService.sheetState$.subscribe(data => {
       this.currentData = data;
-      if (data.mode === 'hidden') {
-        this.updateState('hidden');
-      }
+      if (data.mode === 'hidden') this.updateState('hidden');
     });
 
     // 2. Subscribe Height State
@@ -40,11 +60,10 @@ export class BottomSheetComponent implements OnInit {
     });
   }
 
-  // --- Drag Logic ---
+  // --- Logic การลาก (เหมือนเดิม) ---
   onTouchStart(event: TouchEvent | MouseEvent) {
     this.isDragging = true;
-    const clientY = this.getClientY(event);
-    this.startY = clientY;
+    this.startY = this.getClientY(event);
     const el = this.sheetRef.nativeElement;
     this.startHeight = el.offsetHeight;
     this.renderer.setStyle(el, 'transition', 'none');
@@ -52,15 +71,10 @@ export class BottomSheetComponent implements OnInit {
 
   onTouchMove(event: TouchEvent | MouseEvent) {
     if (!this.isDragging) return;
-    if (event instanceof TouchEvent) event.preventDefault();
-
     const clientY = this.getClientY(event);
-    const deltaY = this.startY - clientY; // Drag up = positive
+    const deltaY = this.startY - clientY;
     const newHeight = this.startHeight + deltaY;
-
-    // Max height = window height - footer - top margin
-    const footerHeight = 80; // ประมาณการ หรือใช้ logic ดึงค่าจริง
-    const maxHeight = window.innerHeight - footerHeight - 40; 
+    const maxHeight = window.innerHeight - 60; 
 
     if (newHeight > 0 && newHeight <= maxHeight) {
       this.renderer.setStyle(this.sheetRef.nativeElement, 'height', `${newHeight}px`);
@@ -70,47 +84,31 @@ export class BottomSheetComponent implements OnInit {
   onTouchEnd() {
     if (!this.isDragging) return;
     this.isDragging = false;
-
     const el = this.sheetRef.nativeElement;
-    const currentHeight = el.offsetHeight;
-    const screenHeight = window.innerHeight;
-
     this.renderer.setStyle(el, 'transition', 'height 0.4s cubic-bezier(0.25, 1, 0.5, 1)');
     this.renderer.removeStyle(el, 'height');
 
-    const ratio = currentHeight / screenHeight;
-
-    if (ratio > 0.6) {
-      this.updateState('expanded');
-    } else if (ratio > 0.25) {
-      this.updateState('default');
-    } else {
-      this.updateState('peek');
-    }
+    const ratio = el.offsetHeight / window.innerHeight;
+    if (ratio > 0.6) this.updateState('expanded');
+    else if (ratio > 0.25) this.updateState('default');
+    else this.updateState('peek');
   }
 
   private getClientY(event: TouchEvent | MouseEvent): number {
     return event instanceof TouchEvent ? event.touches[0].clientY : event.clientY;
   }
 
-  // ✅ เปลี่ยนเป็น public และแก้ Logic Type Mismatch
-  public updateState(state: 'hidden' | 'peek' | 'default' | 'expanded') {
-    if (this.currentState === state) return;
+  updateState(state: 'hidden' | 'peek' | 'default' | 'expanded') {
     this.currentState = state;
-
-    // ✅ เช็คก่อนส่งค่ากลับ Service เพื่อไม่ให้ Type Error
     if (state !== 'hidden') {
-       // เรียกชื่อฟังก์ชันให้ถูก (setExpansionState ไม่ใช่ notifyStateChange)
        this.bottomSheetService.setExpansionState(state);
     }
   }
   
-  // Helper: เมื่อ User เลือกตึก ส่ง Action กลับไปบอก App/Map
   selectBuilding(item: any) {
     this.bottomSheetService.triggerAction('enter-building', item.id);
   }
 
-  // Helper: กดปุ่มปิดในหน้า Detail ให้กลับไปหน้า List (ถ้ามีข้อมูล List ค้างอยู่)
   backToList() {
     this.bottomSheetService.close();
   }

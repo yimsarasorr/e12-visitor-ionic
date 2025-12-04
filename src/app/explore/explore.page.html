@@ -1,13 +1,50 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>explore</ion-title>
+<ion-header class="ion-no-border">
+  <ion-toolbar *ngIf="viewMode === 'map'">
+    <ion-searchbar placeholder="ค้นหาห้อง หรือ อาคาร" mode="ios" class="custom-search"></ion-searchbar>
+  </ion-toolbar>
+  
+  <ion-toolbar *ngIf="viewMode !== 'map'">
+    <ion-buttons slot="start">
+      <ion-button (click)="resetToBuildingOverview()">
+        <ion-icon slot="start" name="arrow-back"></ion-icon>
+        กลับ
+      </ion-button>
+    </ion-buttons>
+    <ion-title>{{ viewMode === 'building' ? buildingData.buildingName : 'ชั้น ' + selectedFloorValue }}</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">explore</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<ion-content [fullscreen]="true" [scrollY]="false">
+  <div class="content-container">
+    
+    <div *ngIf="viewMode === 'map'" class="full-size">
+      <app-map-view></app-map-view>
+    </div>
+
+    <div *ngIf="viewMode === 'building'" class="full-size bg-gradient">
+      <app-building-view
+        [floors]="buildingData.floors"
+        [activeFloor]="lastActiveFloor"
+        (floorSelected)="onFloorSelected($event)">
+      </app-building-view>
+      
+      <div class="building-info-overlay">
+        <h2>{{ buildingData.buildingName }}</h2>
+        <p>แตะที่ชั้นเพื่อเข้าชม</p>
+      </div>
+    </div>
+
+    <div *ngIf="viewMode === 'floor'" class="full-size">
+      <app-floor-plan
+        [floorData]="selectedFloorData"
+        [floors]="buildingData.floors"
+        [activeFloorValue]="selectedFloorValue"
+        (floorChange)="onFloorSelected($event)">
+      </app-floor-plan>
+    </div>
+
+  </div>
+
+  <app-bottom-sheet></app-bottom-sheet>
+
 </ion-content>

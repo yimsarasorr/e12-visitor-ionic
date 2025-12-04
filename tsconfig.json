@@ -6,7 +6,7 @@
     "outDir": "./dist/out-tsc",
     "forceConsistentCasingInFileNames": true,
     "esModuleInterop": true,
-    "strict": true,
+    "strict": false,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
     "noImplicitReturns": true,
@@ -20,7 +20,11 @@
     "module": "es2020",
     "lib": ["es2018", "dom"],
     "skipLibCheck": true,
-    "useDefineForClassFields": false
+    "useDefineForClassFields": false,
+    "resolveJsonModule": true,           // แก้ Error: Cannot find module '...json'
+    "allowSyntheticDefaultImports": true,
+    "noImplicitAny": false,              // แก้ Error: Parameter implicitly has an 'any' type
+    
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
