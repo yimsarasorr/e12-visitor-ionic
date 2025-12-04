@@ -7,30 +7,40 @@ export const routes: Routes = [
     component: TabsPage,
     children: [
       {
-        path: 'tab1',
+        path: 'explore',
         loadComponent: () =>
-          import('../tab1/tab1.page').then((m) => m.Tab1Page),
+          import('../explore/explore.page').then((m) => m.ExplorePage),
       },
       {
-        path: 'tab2',
+        path: 'bookings',
         loadComponent: () =>
-          import('../tab2/tab2.page').then((m) => m.Tab2Page),
+          import('../bookings/bookings.page').then((m) => m.BookingsPage),
       },
       {
-        path: 'tab3',
+        path: 'saved',
         loadComponent: () =>
-          import('../tab3/tab3.page').then((m) => m.Tab3Page),
+          import('../saved/saved.page').then((m) => m.SavedPage),
+      },
+      {
+        path: 'recent',
+        loadComponent: () =>
+          import('../recent/recent.page').then((m) => m.RecentPage),
+      },
+      {
+        path: 'profile',
+        loadComponent: () =>
+          import('../profile/profile.page').then((m) => m.ProfilePage),
       },
       {
         path: '',
-        redirectTo: '/tabs/tab1',
+        redirectTo: '/tabs/explore', // ตั้งให้หน้า Explore เป็นหน้าแรก
         pathMatch: 'full',
       },
     ],
   },
   {
     path: '',
-    redirectTo: '/tabs/tab1',
+    redirectTo: '/tabs/explore',
     pathMatch: 'full',
   },
 ];

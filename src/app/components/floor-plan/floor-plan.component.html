@@ -1,0 +1,140 @@
+<div [class.fullscreen]="isFullscreen" class="floor-plan-wrapper">
+  <canvas #canvas></canvas>
+
+  <div class="floor-plan-toolbar" (click)="$event.stopPropagation()">
+    <div class="floor-toolbar-left" *ngIf="floorData">
+      <!-- <div class="floor-indicator">
+        <span class="floor-indicator__number">{{ floorData.floor }}</span>
+        <div class="floor-indicator__label">
+          <span class="floor-indicator__title">{{ floorData.floorName || ('ชั้น ' + floorData.floor) }}</span>
+          <span class="floor-indicator__subtitle">Floorplan</span>
+        </div>
+      </div> -->
+
+      <div class="floor-dropdown" *ngIf="floorOptions.length">
+        <p-select
+          inputId="floor-dropdown"
+          [options]="floorOptions"
+          [ngModel]="activeFloorValue"
+          (ngModelChange)="onFloorSelectionChange($event)"
+          placeholder="เลือกชั้น"
+          optionLabel="label"
+          optionValue="value"
+          styleClass="floor-dropdown__control"
+        ></p-select>
+      </div>
+    </div>
+
+    <div class="toolbar-meta">
+      <div class="toolbar-actions">
+        <button
+          pButton
+          type="button"
+          class="toolbar-button"
+          [icon]="currentView === 'iso' ? 'pi pi-cube' : 'pi pi-map'"
+          [label]="currentView === 'iso' ? 'มุมมองอาคาร' : 'มุมมองจากบน'"
+          (click)="toggleView()"
+        ></button>
+        <button
+          pButton
+          type="button"
+          class="toolbar-icon-button"
+          [icon]="isFullscreen ? 'pi pi-compress' : 'pi pi-external-link'"
+          (click)="toggleFullscreen()"
+          [attr.aria-label]="isFullscreen ? 'ปิดโหมดเต็มหน้าจอ' : 'เปิดโหมดเต็มหน้าจอ'"
+        ></button>
+      </div>
+
+      <div class="info-display-container">
+        <div class="zone-display" *ngIf="interaction.currentZoneId$ | async as zoneId">
+          <i class="pi pi-map-marker"></i>
+          <span>{{ zoneId }}</span>
+        </div>
+        <div class="zone-display" *ngIf="playerPositionDisplay$ | async as position">
+          <i class="pi pi-compass"></i>
+          <span>{{ position }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="camera-control-stack" (click)="$event.stopPropagation()">
+    <button
+      pButton
+      type="button"
+      class="control-button joystick-toggle"
+      icon="pi pi-gamepad"
+      [class.active]="isJoystickVisible"
+      (click)="toggleJoystickVisibility()"
+      [attr.aria-pressed]="isJoystickVisible"
+      aria-label="สลับการแสดงจอยสติ๊ก"
+    ></button>
+    <div class="zoom-controls">
+      <button
+        pButton
+        type="button"
+        class="zoom-button"
+        icon="pi pi-plus"
+        (click)="adjustCameraZoom('in')"
+        [disabled]="!canZoomIn"
+        aria-label="ซูมเข้า"
+      ></button>
+      <span class="zoom-divider"></span>
+      <button
+        pButton
+        type="button"
+        class="zoom-button"
+        icon="pi pi-minus"
+        (click)="adjustCameraZoom('out')"
+        [disabled]="!canZoomOut"
+        aria-label="ซูมออก"
+      ></button>
+    </div>
+  </div>
+
+  <app-joystick *ngIf="isJoystickVisible"></app-joystick>
+</div>
+
+<p-dialog
+  header="รายละเอียดพื้นที่"
+  [(visible)]="detailDialogVisible"
+  (onHide)="onDialogHide()" [modal]="true"
+  appendTo="body"
+  [style]="{ width: '48vw', 'max-width': '480px' }"
+  [breakpoints]="{ '1200px': '60vw', '960px': '70vw', '640px': '92vw' }"
+  [draggable]="false"
+  [resizable]="false"
+  styleClass="floor-detail-dialog"
+>
+  <div *ngIf="interaction.selectedObject$ | async as selected" class="detail-content" (click)="$event.stopPropagation()">
+    <div class="detail-header">
+      <h3>{{ selected.data?.name || selected.data?.id }}</h3>
+      <p class="detail-subtitle">
+        {{ selected.type | titlecase }} • ชั้น {{ selected.data?.floor ?? floorData?.floor }}
+      </p>
+    </div>
+
+    <ng-container [ngSwitch]="selected.type">
+      <div class="detail-section" *ngSwitchCase="'door'">
+        <h4>สิทธิ์การเข้าใช้งาน</h4>
+        <p>
+          <strong>ID ประตู:</strong>
+          {{ selected.data.id }}
+        </p>
+        <p>
+        </p>
+        <p>
+          <strong>สถานะ:</strong>
+          <ng-container *ngIf="interaction.permissionList$ | async as list">
+            <span [ngClass]="list.includes(selected.data.id) ? 'status-unlocked' : 'status-locked'">
+              {{ list.includes(selected.data.id) ? 'UNLOCKED' : 'LOCKED' }}
+            </span>
+          </ng-container>
+        </p>
+      </div>
+      <div class="detail-section" *ngSwitchDefault>
+        <p class="detail-description">รอข้อมูลเพิ่มเติมสำหรับพื้นที่นี้</p>
+      </div>
+    </ng-container>
+  </div>
+</p-dialog>

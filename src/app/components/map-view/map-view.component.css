@@ -1,0 +1,55 @@
+/* ✅ สำคัญ: ต้องมี :host เพื่อบังคับให้ Component เต็มพื้นที่ */
+:host {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  height: calc(100vh - var(--header-height, 80px) - var(--footer-height, 4.5rem));
+  position: relative;
+  overflow: hidden;
+}
+
+.map-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+  background-color: #e5e7eb; /* สีพื้นหลังกันจอขาว */
+}
+
+:host ::ng-deep .leaflet-container {
+  width: 100%;
+  height: 100%;
+  background: #e5e7eb;
+}
+
+.fab-container {
+  position: absolute;
+  bottom: 180px; /* ดันขึ้นหลบ Bottom Sheet */
+  right: 16px;
+  z-index: 1000;
+}
+
+.location-fab {
+  width: 56px;
+  height: 56px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2563eb;
+  transition: transform 0.2s;
+}
+
+.location-fab:active {
+  transform: scale(0.95);
+}
