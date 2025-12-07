@@ -1,5 +1,5 @@
-<ion-toolbar color="light" class="fastpass-toolbar">
-  <ion-title size="small">
+<ion-toolbar class="fastpass-toolbar">
+  <ion-title slot="start">
     <div class="brand">
       <img src="assets/FastPass_Icon_1.png" alt="Fastpass" />
       <div class="brand-text">
@@ -11,9 +11,12 @@
 
   <ion-buttons slot="end">
     <ng-container *ngIf="!isLoading && !loadError; else headerFallback">
-      <ion-item lines="none" class="user-select-item">
+      <ion-item lines="none" class="user-select-item" button="true" detail="false">
+        <ion-icon name="person-circle-outline" slot="start"></ion-icon>
+        
         <ion-select
           interface="popover"
+          mode="md"
           [value]="selectedUserId"
           (ionChange)="onUserChange($event)"
           placeholder="เลือกผู้ใช้"
@@ -22,17 +25,20 @@
             {{ user.role_label || user.full_name }}
           </ion-select-option>
         </ion-select>
+        
+        <ion-icon name="chevron-down-outline" slot="end" class="dropdown-arrow"></ion-icon>
       </ion-item>
     </ng-container>
   </ion-buttons>
 </ion-toolbar>
 
 <ng-template #headerFallback>
-  <ion-item lines="none" class="user-select-item">
-    <ion-skeleton-text *ngIf="isLoading" animated class="user-skeleton"></ion-skeleton-text>
-    <div *ngIf="loadError" class="load-error">
-      <span>{{ loadError }}</span>
-      <ion-button fill="clear" size="small" (click)="retry()">ลองใหม่</ion-button>
+  <ion-buttons slot="end">
+    <div class="fallback-wrapper">
+      <ion-skeleton-text *ngIf="isLoading" animated class="user-skeleton"></ion-skeleton-text>
+      <div *ngIf="loadError" class="load-error">
+        <ion-icon name="alert-circle" color="danger"></ion-icon>
+      </div>
     </div>
-  </ion-item>
+  </ion-buttons>
 </ng-template>

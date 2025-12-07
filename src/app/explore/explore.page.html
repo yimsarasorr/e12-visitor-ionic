@@ -1,11 +1,13 @@
+<ion-header class="ion-no-border">
+  <app-fastpass-header
+    class="screen-header"
+    [selectedUserId]="selectedUserId"
+    (userSelected)="onUserSelected($event)">
+  </app-fastpass-header>
+</ion-header>
+
 <ion-content [fullscreen]="true" [scrollY]="false">
   <div class="screen-wrapper">
-    <app-fastpass-header
-      class="screen-header"
-      [selectedUserId]="selectedUserId"
-      (userSelected)="onUserSelected($event)"
-    ></app-fastpass-header>
-
     <div class="view-toolbar" *ngIf="viewMode !== 'map'">
       <ion-button fill="clear" class="back-button" (click)="resetToBuildingOverview()">
         <ion-icon slot="start" name="arrow-back"></ion-icon>

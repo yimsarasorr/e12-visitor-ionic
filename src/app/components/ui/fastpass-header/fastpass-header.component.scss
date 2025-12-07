@@ -1,88 +1,147 @@
+/* ไฟล์: src/app/components/ui/fastpass-header/fastpass-header.component.scss */
+
 .fastpass-toolbar {
-  padding-top: var(--ion-safe-area-top, 0px);
+  --background: #ffffff;
+  --border-width: 0;
+  border-bottom: 1px solid var(--ion-color-step-100, #f1f5f9);
+  
+  /* บังคับความสูง Toolbar เพื่อให้ Center แม่นยำ */
+  --min-height: 60px;
+  
+  /* Padding แนวตั้งเล็กน้อย เพื่อไม่ให้เบียดขอบบนล่าง */
+  padding-top: var(--ion-safe-area-top, 0);
+  padding-bottom: 4px; 
 }
 
-.fastpass-toolbar ion-title {
-  display: flex;
-  align-items: center;
-  padding-inline: 0;
+/* --- Brand Section --- */
+ion-title {
+  padding-inline: 16px; /* ระยะห่างจากขอบซ้าย */
 }
 
 .brand {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  align-items: center; /* จัดให้อยู่กลางแนวตั้ง */
+  gap: 12px;
+  height: 100%;
 }
 
 .brand img {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px; /* Logo มนนิดหน่อย */
   object-fit: contain;
 }
 
 .brand-text {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   line-height: 1.2;
 }
 
 .brand-name {
-  font-weight: 700;
-  letter-spacing: 0.15em;
-  font-size: 0.85rem;
+  font-weight: 800;
+  font-size: 0.9rem;
   color: var(--ion-color-primary, #1d4ed8);
-  white-space: nowrap;
+  letter-spacing: 0.05em;
 }
 
 .brand-tagline {
-  font-size: 0.82rem;
-  color: var(--ion-color-dark, #0f172a);
-  font-weight: 600;
+  font-size: 0.75rem;
+  color: var(--ion-color-medium, #64748b);
+}
+
+/* --- User Select Button --- */
+ion-buttons[slot="end"] {
+  margin-inline-end: 16px; /* ระยะห่างจากขอบขวา */
+  
+  /* แก้ปัญหาปุ่มร่น: จัด Flex ให้ Center ชัดเจน */
+  display: flex;
+  align-items: center;
+  height: 100%;
 }
 
 .user-select-item {
+  /* Reset ค่า Default ของ ion-item ที่ชอบดัน layout */
+  --min-height: 0;
   --padding-start: 0;
   --inner-padding-end: 0;
-  --inner-padding-top: 0;
-  --inner-padding-bottom: 0;
-  min-width: 160px;
-  max-width: 200px;
+  margin: 0; 
+
+  /* Styling ตัวปุ่ม */
+  --background: var(--ion-color-step-50, #f8fafc);
+  --background-activated: var(--ion-color-step-150, #e2e8f0);
+  
+  /* Shape: มนกำลังดี ไม่กลมเป็นเม็ดยา */
+  --border-radius: 12px; 
+  border-radius: 12px;
+  
+  border: 1px solid var(--ion-color-step-150, #cbd5e1);
+  
+  /* Dimensions & Spacing */
+  height: 40px; /* ความสูงกำลังดี */
+  padding-left: 12px;
+  padding-right: 12px;
+  
+  display: flex;
+  align-items: center;
+  
+  /* Transition นุ่มๆ เวลา hover/click */
+  transition: all 0.2s ease;
 }
 
+/* Icon คนด้านหน้า */
+.user-select-item ion-icon[slot="start"] {
+  margin-inline-end: 8px;
+  font-size: 1.2rem;
+  color: var(--ion-color-medium);
+  margin-top: 0; /* ป้องกัน icon ลอย */
+  margin-bottom: 0;
+}
+
+/* ตัวหนังสือใน Select */
 .user-select-item ion-select {
+  padding: 0;
   width: 100%;
-  max-width: 100%;
+  max-width: 140px; /* จำกัดความกว้างไม่ให้กินที่ */
+  
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ion-color-dark);
+  
+  /* จัด Text ให้กลาง */
+  display: flex;
+  align-items: center;
 }
 
-.user-select-item ion-select::part(text),
-.user-select-item ion-select::part(placeholder) {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/* Icon ลูกศรด้านหลัง */
+.dropdown-arrow {
+  margin-inline-start: 8px;
+  font-size: 0.8rem;
+  opacity: 0.5;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* Fallback / Skeleton */
+.fallback-wrapper {
+  display: flex;
+  align-items: center;
+  height: 40px;
 }
 
 .user-skeleton {
-  width: 140px;
-  height: 20px;
-  border-radius: 10px;
+  width: 120px;
+  height: 36px;
+  border-radius: 8px;
 }
 
-.load-error {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--ion-color-danger, #ef4444);
-  font-size: 0.85rem;
-}
-
-@media (max-width: 520px) {
-  .fastpass-toolbar ion-title {
-    align-items: flex-start;
-  }
-
-  .user-select-item {
-    min-width: 0;
-    width: 100%;
+/* Responsive */
+@media (max-width: 480px) {
+  .brand-tagline { display: none; }
+  .user-select-item { 
+    max-width: 150px;
+    padding-left: 8px;
+    padding-right: 8px;
   }
 }

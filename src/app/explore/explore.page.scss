@@ -43,7 +43,7 @@ ion-content {
 .content-container {
   flex: 1;
   display: flex;
-  padding: 0 1rem;
+  padding: 0;
   padding-bottom: 0;
 }
 
@@ -99,14 +99,4 @@ ion-content {
   color: var(--ion-color-dark, #0f172a);
   margin-bottom: 0.25rem;
   font-weight: 700;
-}
-
-@media (max-width: 768px) {
-  .content-container {
-    padding-inline: 0.75rem;
-  }
-
-  .view-card ion-card-content {
-    --view-bottom-offset: clamp(8rem, 32vh, 16rem);
-  }
 }

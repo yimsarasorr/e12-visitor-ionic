@@ -3,6 +3,9 @@ import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angu
 import { IonicModule } from '@ionic/angular';
 import { Subject, takeUntil } from 'rxjs';
 import { AuthService, UserProfile } from '../../../services/auth.service';
+// 1. Import Icon ที่ต้องใช้
+import { addIcons } from 'ionicons';
+import { chevronDownOutline, personCircleOutline, alertCircle } from 'ionicons/icons';
 
 @Component({
   selector: 'app-fastpass-header',
@@ -21,7 +24,14 @@ export class FastpassHeaderComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) {
+    // 2. ลงทะเบียน Icon ตรงนี้ครับ
+    addIcons({ 
+      'chevron-down-outline': chevronDownOutline,
+      'person-circle-outline': personCircleOutline,
+      'alert-circle': alertCircle
+    });
+  }
 
   ngOnInit(): void {
     this.fetchUsers();
