@@ -20,31 +20,31 @@
           <app-map-view></app-map-view>
         </div>
 
-        <div *ngSwitchCase="'building'" class="view-pane view-pane--building">
-          <div class="building-stage">
+        <ion-card *ngSwitchCase="'building'" class="view-card">
+          <ion-card-content>
             <app-building-view
               [floors]="buildingData.floors"
               [activeFloor]="lastActiveFloor"
               (floorSelected)="onFloorSelected($event)">
             </app-building-view>
 
-            <div class="building-info-overlay">
+            <div class="card-overlay">
               <h2>{{ buildingData.buildingName }}</h2>
               <p>แตะที่ชั้นเพื่อเข้าชม</p>
             </div>
-          </div>
-        </div>
+          </ion-card-content>
+        </ion-card>
 
-        <div *ngSwitchCase="'floor'" class="view-pane view-pane--floor">
-          <div class="floor-stage">
+        <ion-card *ngSwitchCase="'floor'" class="view-card">
+          <ion-card-content>
             <app-floor-plan
               [floorData]="selectedFloorData"
               [floors]="buildingData.floors"
               [activeFloorValue]="selectedFloorValue"
               (floorChange)="onFloorSelected($event)">
             </app-floor-plan>
-          </div>
-        </div>
+          </ion-card-content>
+        </ion-card>
       </ng-container>
     </div>
 

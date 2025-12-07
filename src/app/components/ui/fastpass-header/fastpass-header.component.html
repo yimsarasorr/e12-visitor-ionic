@@ -1,32 +1,38 @@
-<div class="header-card">
-  <div class="brand">
-    <img src="assets/FastPass_Icon_1.png" alt="Fastpass logo" class="brand-logo" />
-    <div class="brand-copy">
-      <span class="brand-title">FASTPASS</span>
-      <span class="brand-subtitle">ระบบเข้าอาคาร</span>
+<ion-toolbar color="light" class="fastpass-toolbar">
+  <ion-title size="small">
+    <div class="brand">
+      <img src="assets/FastPass_Icon_1.png" alt="Fastpass" />
+      <div class="brand-text">
+        <span class="brand-name">FASTPASS</span>
+        <span class="brand-tagline">ระบบเข้าอาคาร</span>
+      </div>
     </div>
-  </div>
+  </ion-title>
 
-  <div class="selector" *ngIf="!isLoading && !loadError">
-    <ion-select
-      interface="popover"
-      [value]="selectedUserId"
-      (ionChange)="onUserChange($event)"
-      placeholder="เลือกผู้ใช้"
-      class="user-select"
-    >
-      <ion-select-option *ngFor="let user of users" [value]="user.id">
-        {{ user.role_label || user.full_name }}
-      </ion-select-option>
-    </ion-select>
-  </div>
+  <ion-buttons slot="end">
+    <ng-container *ngIf="!isLoading && !loadError; else headerFallback">
+      <ion-item lines="none" class="user-select-item">
+        <ion-select
+          interface="popover"
+          [value]="selectedUserId"
+          (ionChange)="onUserChange($event)"
+          placeholder="เลือกผู้ใช้"
+        >
+          <ion-select-option *ngFor="let user of users" [value]="user.id">
+            {{ user.role_label || user.full_name }}
+          </ion-select-option>
+        </ion-select>
+      </ion-item>
+    </ng-container>
+  </ion-buttons>
+</ion-toolbar>
 
-  <div class="selector" *ngIf="isLoading">
-    <ion-skeleton-text animated class="skeleton"></ion-skeleton-text>
-  </div>
-
-  <div class="selector error" *ngIf="loadError">
-    <span>{{ loadError }}</span>
-    <ion-button fill="clear" size="small" (click)="retry()">ลองใหม่</ion-button>
-  </div>
-</div>
+<ng-template #headerFallback>
+  <ion-item lines="none" class="user-select-item">
+    <ion-skeleton-text *ngIf="isLoading" animated class="user-skeleton"></ion-skeleton-text>
+    <div *ngIf="loadError" class="load-error">
+      <span>{{ loadError }}</span>
+      <ion-button fill="clear" size="small" (click)="retry()">ลองใหม่</ion-button>
+    </div>
+  </ion-item>
+</ng-template>
