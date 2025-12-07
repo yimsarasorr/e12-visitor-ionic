@@ -15,8 +15,9 @@ import { FastpassHeaderComponent } from '../components/ui/fastpass-header/fastpa
 // Import Services
 import { BottomSheetService } from '../services/bottom-sheet.service';
 import { BuildingDataService, BuildingData } from '../services/building-data.service';
-import { UserProfile } from '../services/auth.service';
-import { take } from 'rxjs';
+import { AuthService, UserProfile } from '../services/auth.service';
+import { FloorplanInteractionService } from '../services/floorplan/floorplan-interaction.service';
+import { Subscription, take } from 'rxjs';
 
 @Component({
   selector: 'app-explore',
@@ -39,6 +40,8 @@ export class ExplorePage implements OnInit, AfterViewInit, OnDestroy {
   private bottomSheetService = inject(BottomSheetService);
   private buildingDataService = inject(BuildingDataService);
   private cdr = inject(ChangeDetectorRef);
+  private authService = inject(AuthService);
+  private floorplanInteraction = inject(FloorplanInteractionService);
 
   // State
   public viewMode: 'map' | 'building' | 'floor' = 'map';
@@ -49,6 +52,8 @@ export class ExplorePage implements OnInit, AfterViewInit, OnDestroy {
   public isLoading = false;
   public selectedUserId: string | null = null;
   public selectedUserProfile: UserProfile | null = null;
+  private currentPermissionSubscription?: Subscription;
+  private currentPermissionList: string[] = [];
 
   // Mock Data
   public mockBuildings = [
@@ -59,6 +64,11 @@ export class ExplorePage implements OnInit, AfterViewInit, OnDestroy {
   ];
 
   private tabBarObserver?: ResizeObserver;
+  private readonly totalFloors = 12;
+  private readonly floorColorPalette: string[] = [
+    '#f94144', '#f3722c', '#f8961e', '#f9844a', '#f9c74f', '#90be6d',
+    '#43aa8b', '#4d908e', '#577590', '#277da1', '#a855f7', '#ef476f'
+  ];
 
   constructor() {
     addIcons({ arrowBack }); // Register Icon สำหรับปุ่ม Back
@@ -86,6 +96,7 @@ export class ExplorePage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.currentPermissionSubscription?.unsubscribe();
     this.tabBarObserver?.disconnect();
   }
 
@@ -122,7 +133,7 @@ export class ExplorePage implements OnInit, AfterViewInit, OnDestroy {
     this.viewMode = 'floor';
 
     setTimeout(() => {
-      this.bottomSheetService.showAccessList([]);
+      this.bottomSheetService.showAccessList(this.currentPermissionList);
       this.bottomSheetService.setExpansionState('peek');
     }, 100);
 
@@ -146,17 +157,147 @@ export class ExplorePage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private prepareBuildingData(data: BuildingData): BuildingData {
-    // Logic เดิมของคุณสำหรับการเตรียมข้อมูลตึก (จำลอง walls, floors)
-    // ผมใส่แบบย่อไว้ให้ ถ้าคุณมี logic เต็มๆ ใน app.component.ts เดิม ให้ก๊อปมาใส่แทน function นี้นะครับ
-    const baseData = { ...data };
-    // ... (วาง Logic prepareBuildingData เดิมของคุณที่นี่) ...
-    return baseData;
+    const baseData: BuildingData = {
+      buildingId: data?.buildingId ?? 'E12',
+      buildingName: data?.buildingName ?? 'E12 Engineering Building',
+      floors: Array.isArray(data?.floors) ? [...data.floors] : []
+    };
+
+    const baseWalls = baseData.floors[0]?.walls ? this.cloneWalls(baseData.floors[0].walls) : [];
+
+    const hydratedFloors = baseData.floors
+      .map((floor: any, index: number) => ({
+        ...floor,
+        floor: typeof floor.floor === 'number' ? floor.floor : index + 1,
+        floorName: floor.floorName ?? `ชั้น ${typeof floor.floor === 'number' ? floor.floor : index + 1}`,
+        color: floor.color ?? this.floorColorPalette[index % this.floorColorPalette.length],
+        zones: Array.isArray(floor.zones)
+          ? floor.zones.map((zone: any) => ({
+            ...zone,
+            areas: Array.isArray(zone.areas) ? zone.areas : [],
+            rooms: Array.isArray(zone.rooms) ? zone.rooms : [],
+            objects: Array.isArray(zone.objects) ? zone.objects : []
+          }))
+          : []
+      }))
+      .sort((a, b) => a.floor - b.floor);
+
+    const existingCount = hydratedFloors.length;
+    for (let floorNumber = existingCount + 1; floorNumber <= this.totalFloors; floorNumber++) {
+      hydratedFloors.push(
+        this.createPlaceholderFloor(
+          floorNumber,
+          this.floorColorPalette[(floorNumber - 1) % this.floorColorPalette.length],
+          baseWalls
+        )
+      );
+    }
+
+    return {
+      ...baseData,
+      floors: hydratedFloors
+    };
   }
 
   onUserSelected(user: UserProfile): void {
     this.selectedUserProfile = user;
     this.selectedUserId = user.id;
     console.log('Selected user:', user);
+    this.resolvePermissionsForUser(user);
+  }
+
+  private resolvePermissionsForUser(user: UserProfile): void {
+    this.currentPermissionSubscription?.unsubscribe();
+    this.currentPermissionSubscription = this.authService
+      .getUserPermissions(user.id, user.is_staff)
+      .subscribe({
+        next: permissionList => {
+          this.currentPermissionList = permissionList ?? [];
+          this.floorplanInteraction.setPermissionList(this.currentPermissionList);
+
+          if (this.viewMode === 'floor') {
+            this.bottomSheetService.showAccessList(this.currentPermissionList);
+            this.bottomSheetService.setExpansionState('peek');
+          }
+        },
+        error: err => {
+          console.error('Failed to resolve permissions for user', err);
+          this.currentPermissionList = [];
+          this.floorplanInteraction.setPermissionList([]);
+          if (this.viewMode === 'floor') {
+            this.bottomSheetService.showAccessList([]);
+            this.bottomSheetService.setExpansionState('peek');
+          }
+        }
+      });
+  }
+
+  private createPlaceholderFloor(floorNumber: number, color: string, baseWalls: any[]): any {
+    const hallBoundary = { min: { x: -7, y: -9 }, max: { x: 7, y: 9 } };
+    const liftBoundary = { min: { x: -7, y: -18 }, max: { x: 7, y: -9 } };
+
+    return {
+      floor: floorNumber,
+      floorName: `ชั้น ${floorNumber}`,
+      color,
+      walls: this.cloneWalls(baseWalls),
+      zones: [
+        {
+          id: `f${floorNumber}_core_zone`,
+          name: 'Core Corridor',
+          areas: [
+            { id: `f${floorNumber}_hall`, name: `Hall ${floorNumber}`, color: '#cfe9ff', boundary: hallBoundary },
+            { id: `f${floorNumber}_lift_lobby`, name: 'Lift Lobby', color: '#b1ddff', boundary: liftBoundary }
+          ],
+          rooms: [
+            {
+              id: `f${floorNumber}_wing_left`,
+              name: `Learning Studio ${floorNumber}A`,
+              color: '#d1c4f6',
+              boundary: { min: { x: -46, y: -4 }, max: { x: -7, y: 9 } },
+              doors: [
+                {
+                  id: `f${floorNumber}_wing_left_door`,
+                  center: { x: -16.75, y: -4 },
+                  size: { width: 2, depth: 0.2 },
+                  accessLevel: 1
+                }
+              ]
+            },
+            {
+              id: `f${floorNumber}_wing_right`,
+              name: `Innovation Lab ${floorNumber}B`,
+              color: '#c3f7d6',
+              boundary: { min: { x: 7, y: -4 }, max: { x: 46, y: 9 } },
+              doors: [
+                {
+                  id: `f${floorNumber}_wing_right_door`,
+                  center: { x: 16.75, y: -4 },
+                  size: { width: 2, depth: 0.2 },
+                  accessLevel: 0
+                }
+              ]
+            }
+          ],
+          objects: [
+            {
+              id: `f${floorNumber}_collab_hub`,
+              type: 'Collaboration Hub',
+              boundary: { min: { x: -4, y: -11 }, max: { x: 4, y: -9 } }
+            }
+          ]
+        }
+      ]
+    };
+  }
+
+  private cloneWalls(walls: any[]): any[] {
+    return Array.isArray(walls)
+      ? walls.map(wall => ({
+          start: { x: wall.start.x, y: wall.start.y },
+          end: { x: wall.end.x, y: wall.end.y }
+        }))
+      : [];
   }
 
   private registerTabBarObserver(): void {

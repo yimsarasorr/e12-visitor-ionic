@@ -15,31 +15,37 @@
     </div>
 
     <div class="content-container" [class.has-toolbar]="viewMode !== 'map'">
-      <div *ngIf="viewMode === 'map'" class="full-size">
-        <app-map-view></app-map-view>
-      </div>
-
-      <div *ngIf="viewMode === 'building'" class="full-size bg-gradient">
-        <app-building-view
-          [floors]="buildingData.floors"
-          [activeFloor]="lastActiveFloor"
-          (floorSelected)="onFloorSelected($event)">
-        </app-building-view>
-        
-        <div class="building-info-overlay">
-          <h2>{{ buildingData.buildingName }}</h2>
-          <p>แตะที่ชั้นเพื่อเข้าชม</p>
+      <ng-container [ngSwitch]="viewMode">
+        <div *ngSwitchCase="'map'" class="view-pane view-pane--map">
+          <app-map-view></app-map-view>
         </div>
-      </div>
 
-      <div *ngIf="viewMode === 'floor'" class="full-size">
-        <app-floor-plan
-          [floorData]="selectedFloorData"
-          [floors]="buildingData.floors"
-          [activeFloorValue]="selectedFloorValue"
-          (floorChange)="onFloorSelected($event)">
-        </app-floor-plan>
-      </div>
+        <div *ngSwitchCase="'building'" class="view-pane view-pane--building">
+          <div class="building-stage">
+            <app-building-view
+              [floors]="buildingData.floors"
+              [activeFloor]="lastActiveFloor"
+              (floorSelected)="onFloorSelected($event)">
+            </app-building-view>
+
+            <div class="building-info-overlay">
+              <h2>{{ buildingData.buildingName }}</h2>
+              <p>แตะที่ชั้นเพื่อเข้าชม</p>
+            </div>
+          </div>
+        </div>
+
+        <div *ngSwitchCase="'floor'" class="view-pane view-pane--floor">
+          <div class="floor-stage">
+            <app-floor-plan
+              [floorData]="selectedFloorData"
+              [floors]="buildingData.floors"
+              [activeFloorValue]="selectedFloorValue"
+              (floorChange)="onFloorSelected($event)">
+            </app-floor-plan>
+          </div>
+        </div>
+      </ng-container>
     </div>
 
     <app-bottom-sheet></app-bottom-sheet>
