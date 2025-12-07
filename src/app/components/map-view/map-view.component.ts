@@ -202,7 +202,7 @@ export class MapViewComponent implements OnInit, OnDestroy, AfterViewInit {
 
         // ✅ ส่งข้อมูลตึกให้ Bottom Sheet ทันทีที่เปิด
         this.bottomSheetService.open('building-list', this.targets, 'สถานที่แนะนำ (KMITL)');
-        // ❌ ไม่ต้องสั่ง setExpansionState('peek') ที่นี่ ปล่อยให้ App จัดการ (หรือสั่งก็ได้ถ้าต้องการเริ่มที่ peek)
+        this.bottomSheetService.setExpansionState('default');
     }
 
     async ngAfterViewInit(): Promise<void> {

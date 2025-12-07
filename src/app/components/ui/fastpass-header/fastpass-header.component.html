@@ -1,0 +1,32 @@
+<div class="header-card">
+  <div class="brand">
+    <img src="assets/FastPass_Icon_1.png" alt="Fastpass logo" class="brand-logo" />
+    <div class="brand-copy">
+      <span class="brand-title">FASTPASS</span>
+      <span class="brand-subtitle">ระบบเข้าอาคาร</span>
+    </div>
+  </div>
+
+  <div class="selector" *ngIf="!isLoading && !loadError">
+    <ion-select
+      interface="popover"
+      [value]="selectedUserId"
+      (ionChange)="onUserChange($event)"
+      placeholder="เลือกผู้ใช้"
+      class="user-select"
+    >
+      <ion-select-option *ngFor="let user of users" [value]="user.id">
+        {{ user.role_label || user.full_name }}
+      </ion-select-option>
+    </ion-select>
+  </div>
+
+  <div class="selector" *ngIf="isLoading">
+    <ion-skeleton-text animated class="skeleton"></ion-skeleton-text>
+  </div>
+
+  <div class="selector error" *ngIf="loadError">
+    <span>{{ loadError }}</span>
+    <ion-button fill="clear" size="small" (click)="retry()">ลองใหม่</ion-button>
+  </div>
+</div>

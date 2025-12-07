@@ -29,7 +29,7 @@ export class BottomSheetComponent implements OnInit {
   @ViewChild('sheet') sheetRef!: ElementRef;
 
   currentData: SheetData = { mode: 'hidden' };
-  currentState: 'hidden' | 'peek' | 'default' | 'expanded' = 'hidden';
+  currentState: 'hidden' | 'peek' | 'default' | 'expanded' = 'default';
 
   private startY = 0;
   private startHeight = 0;
@@ -51,12 +51,18 @@ export class BottomSheetComponent implements OnInit {
     // 1. Subscribe Content
     this.bottomSheetService.sheetState$.subscribe(data => {
       this.currentData = data;
-      if (data.mode === 'hidden') this.updateState('hidden');
+      if (data.mode === 'hidden') {
+        this.setState('hidden');
+        return;
+      }
+
+      const nextState = this.bottomSheetService.getCurrentExpansionState();
+      this.setState(nextState);
     });
 
     // 2. Subscribe Height State
     this.bottomSheetService.expansionState$.subscribe(state => {
-      this.updateState(state);
+      this.setState(state);
     });
   }
 
@@ -89,19 +95,21 @@ export class BottomSheetComponent implements OnInit {
     this.renderer.removeStyle(el, 'height');
 
     const ratio = el.offsetHeight / window.innerHeight;
-    if (ratio > 0.6) this.updateState('expanded');
-    else if (ratio > 0.25) this.updateState('default');
-    else this.updateState('peek');
+    if (ratio > 0.6) this.setState('expanded', true);
+    else if (ratio > 0.25) this.setState('default', true);
+    else this.setState('peek', true);
   }
 
   private getClientY(event: TouchEvent | MouseEvent): number {
     return event instanceof TouchEvent ? event.touches[0].clientY : event.clientY;
   }
 
-  updateState(state: 'hidden' | 'peek' | 'default' | 'expanded') {
+  private setState(state: 'hidden' | 'peek' | 'default' | 'expanded', emit = false) {
+    if (this.currentState === state) return;
     this.currentState = state;
-    if (state !== 'hidden') {
-       this.bottomSheetService.setExpansionState(state);
+
+    if (emit && state !== 'hidden') {
+      this.bottomSheetService.setExpansionState(state);
     }
   }
   

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef, AfterViewInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { FormsModule } from '@angular/forms';
@@ -10,10 +10,12 @@ import { MapViewComponent } from '../components/map-view/map-view.component';
 import { BuildingViewComponent } from '../components/building-view/building-view.component';
 import { FloorPlanComponent } from '../components/floor-plan/floor-plan.component';
 import { BottomSheetComponent } from '../components/ui/bottom-sheet/bottom-sheet.component';
+import { FastpassHeaderComponent } from '../components/ui/fastpass-header/fastpass-header.component';
 
 // Import Services
 import { BottomSheetService } from '../services/bottom-sheet.service';
 import { BuildingDataService, BuildingData } from '../services/building-data.service';
+import { UserProfile } from '../services/auth.service';
 import { take } from 'rxjs';
 
 @Component({
@@ -28,10 +30,11 @@ import { take } from 'rxjs';
     MapViewComponent,
     BuildingViewComponent,
     FloorPlanComponent,
-    BottomSheetComponent
+    BottomSheetComponent,
+    FastpassHeaderComponent
   ]
 })
-export class ExplorePage implements OnInit {
+export class ExplorePage implements OnInit, AfterViewInit, OnDestroy {
   // Services
   private bottomSheetService = inject(BottomSheetService);
   private buildingDataService = inject(BuildingDataService);
@@ -44,6 +47,8 @@ export class ExplorePage implements OnInit {
   public selectedFloorValue: number | null = null;
   public lastActiveFloor: number | null = null;
   public isLoading = false;
+  public selectedUserId: string | null = null;
+  public selectedUserProfile: UserProfile | null = null;
 
   // Mock Data
   public mockBuildings = [
@@ -53,6 +58,8 @@ export class ExplorePage implements OnInit {
     { id: 'kmitl_hall', name: 'หอประชุมเจ้าพระยาสุรวงษ์ฯ', description: 'หอประชุมใหญ่ สจล.' }
   ];
 
+  private tabBarObserver?: ResizeObserver;
+
   constructor() {
     addIcons({ arrowBack }); // Register Icon สำหรับปุ่ม Back
     this.buildingData = this.prepareBuildingData(this.buildingDataService.getFallback());
@@ -60,13 +67,26 @@ export class ExplorePage implements OnInit {
 
   ngOnInit() {
     this.bottomSheetService.open('building-list', this.mockBuildings, 'อาคารในบริเวณ');
-    this.bottomSheetService.setExpansionState('peek');
+    this.bottomSheetService.setExpansionState('default');
 
     this.bottomSheetService.action$.subscribe(event => {
       if (event.action === 'enter-building') {
         this.onBuildingSelected(event.payload);
       }
     });
+
+    // Delay measurement slightly to ensure the tab bar is rendered
+    setTimeout(() => this.syncFooterHeight(), 0);
+
+    // Preload users so selection stays consistent when header initialises
+  }
+
+  ngAfterViewInit(): void {
+    this.registerTabBarObserver();
+  }
+
+  ngOnDestroy(): void {
+    this.tabBarObserver?.disconnect();
   }
 
   onBuildingSelected(buildingId: string): void {
@@ -131,5 +151,45 @@ export class ExplorePage implements OnInit {
     const baseData = { ...data };
     // ... (วาง Logic prepareBuildingData เดิมของคุณที่นี่) ...
     return baseData;
+  }
+
+  onUserSelected(user: UserProfile): void {
+    this.selectedUserProfile = user;
+    this.selectedUserId = user.id;
+    console.log('Selected user:', user);
+  }
+
+  private registerTabBarObserver(): void {
+    if (typeof ResizeObserver === 'undefined') {
+      return;
+    }
+
+    const tabBar = document.querySelector('ion-tab-bar');
+    if (!tabBar) {
+      return;
+    }
+
+    this.tabBarObserver = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const element = entry.target as HTMLElement;
+        this.syncFooterHeight(element);
+      }
+    });
+
+    this.tabBarObserver.observe(tabBar);
+  }
+
+  private syncFooterHeight(target?: HTMLElement): void {
+    const el = target || document.querySelector('ion-tab-bar');
+    if (!el) {
+      return;
+    }
+
+    const computed = getComputedStyle(el);
+    const baseHeight = el.clientHeight;
+    const marginTop = parseFloat(computed.marginTop || '0');
+    const marginBottom = parseFloat(computed.marginBottom || '0');
+    const totalHeight = baseHeight + marginTop + marginBottom;
+    document.documentElement.style.setProperty('--vms-tab-bar-height', `${totalHeight}px`);
   }
 }

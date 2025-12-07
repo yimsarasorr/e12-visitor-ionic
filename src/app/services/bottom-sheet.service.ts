@@ -43,7 +43,15 @@ export class BottomSheetService {
 
   /** สั่งเปลี่ยนความสูง (Peek / Default / Expanded) */
   setExpansionState(state: 'peek' | 'default' | 'expanded') {
+    if (this.expansionStateSubject.getValue() === state) {
+      return;
+    }
     this.expansionStateSubject.next(state);
+  }
+
+  /** คืนค่าความสูงปัจจุบันของแผ่นป็อปอัพ */
+  getCurrentExpansionState(): 'peek' | 'default' | 'expanded' {
+    return this.expansionStateSubject.getValue();
   }
 
   /** Helper: เปิดหน้ารายชื่อตึก (สำหรับ Map) */
