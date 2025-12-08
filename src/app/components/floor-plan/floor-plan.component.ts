@@ -24,9 +24,9 @@ import {
   IonContent,
   IonHeader,
   IonIcon,
-  IonItem,
-  IonLabel,
   IonModal,
+  IonSegment,
+  IonSegmentButton,
   IonSelect,
   IonSelectOption,
   IonTitle,
@@ -51,9 +51,9 @@ import { JoystickComponent } from '../joystick/joystick.component';
     IonContent,
     IonHeader,
     IonIcon,
-    IonItem,
-    IonLabel,
     IonModal,
+    IonSegment,
+    IonSegmentButton,
     IonSelect,
     IonSelectOption,
     IonTitle,
@@ -70,8 +70,11 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
   @Input() floors: any[] = [];
   @Input() activeFloorValue: number | null = null;
   @Input() panToTarget: any;
+  @Input() showBackButton = false;
+  @Input() headerTitle?: string;
   @Output() zoneChanged = new EventEmitter<string | null>();
   @Output() floorChange = new EventEmitter<number>();
+  @Output() backRequested = new EventEmitter<void>();
 
   private threeScene = inject(ThreeSceneService);
   private floorBuilder = inject(FloorplanBuilderService);
@@ -199,6 +202,12 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.snapCameraToTarget();
   }
 
+  setView(view: 'iso' | 'top'): void {
+    if (this.currentView === view) return;
+    this.currentView = view;
+    this.snapCameraToTarget();
+  }
+
   onFloorSelectionChange(floorNumber: number | null): void {
     if (floorNumber == null || floorNumber === this.activeFloorValue) {
       return;
@@ -221,6 +230,15 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   toggleJoystickVisibility(): void {
     this.isJoystickVisible = !this.isJoystickVisible;
+  }
+
+  setJoystickVisibility(visible: boolean): void {
+    this.isJoystickVisible = visible;
+  }
+
+  onJoystickModeChange(value: 'on' | 'off' | null): void {
+    if (!value) return;
+    this.isJoystickVisible = value === 'on';
   }
 
   // 3. (แก้ไข) ฟังก์ชัน Zoom ให้เป็นการปรับ camera.zoom

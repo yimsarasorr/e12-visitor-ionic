@@ -8,14 +8,6 @@
 
 <ion-content [fullscreen]="true" [scrollY]="false">
   <div class="screen-wrapper">
-    <div class="view-toolbar" *ngIf="viewMode !== 'map'">
-      <ion-button fill="clear" class="back-button" (click)="resetToBuildingOverview()">
-        <ion-icon slot="start" name="arrow-back"></ion-icon>
-        กลับ
-      </ion-button>
-      <h2>{{ viewMode === 'building' ? buildingData.buildingName : 'ชั้น ' + selectedFloorValue }}</h2>
-    </div>
-
     <div class="content-container" [class.has-toolbar]="viewMode !== 'map'">
       <ng-container [ngSwitch]="viewMode">
         <div *ngSwitchCase="'map'" class="view-pane view-pane--map">
@@ -24,6 +16,15 @@
 
         <ion-card *ngSwitchCase="'building'" class="view-card">
           <ion-card-content>
+            <div class="floating-card-header">
+              <ion-button fill="clear" class="back-button" (click)="resetToBuildingOverview()">
+                <ion-icon slot="icon-only" name="arrow-back"></ion-icon>
+              </ion-button>
+              <div class="title-block">
+                <p class="eyebrow">แผนผังอาคาร</p>
+                <h2>{{ buildingData.buildingName }}</h2>
+              </div>
+            </div>
             <app-building-view
               [floors]="buildingData.floors"
               [activeFloor]="lastActiveFloor"
@@ -43,6 +44,9 @@
               [floorData]="selectedFloorData"
               [floors]="buildingData.floors"
               [activeFloorValue]="selectedFloorValue"
+              [showBackButton]="true"
+              [headerTitle]="selectedFloorData?.floorName"
+              (backRequested)="resetToBuildingOverview()"
               (floorChange)="onFloorSelected($event)">
             </app-floor-plan>
           </ion-card-content>
