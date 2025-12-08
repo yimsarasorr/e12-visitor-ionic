@@ -236,9 +236,11 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.isJoystickVisible = visible;
   }
 
-  onJoystickModeChange(value: string | null): void {
-    if (!value) return;
-    this.isJoystickVisible = value === 'on';
+  onJoystickModeChange(value: any): void {
+    const strValue = String(value);
+    if (!strValue || strValue === 'undefined' || strValue === 'null') return;
+    
+    this.isJoystickVisible = strValue === 'on';
   }
 
   // 3. (แก้ไข) ฟังก์ชัน Zoom ให้เป็นการปรับ camera.zoom
