@@ -15,7 +15,7 @@ import {
   ChangeDetectionStrategy
 } from '@angular/core';
 import * as THREE from 'three';
-import { CommonModule, DecimalPipe } from '@angular/common';
+import { CommonModule, DecimalPipe, TitleCasePipe } from '@angular/common'; // เพิ่ม TitleCasePipe
 import { FormsModule } from '@angular/forms';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import {
@@ -30,8 +30,19 @@ import {
   IonSelect,
   IonSelectOption,
   IonTitle,
-  IonToolbar
+  IonToolbar,
+  IonList,        // เพิ่ม
+  IonItem,        // เพิ่ม
+  IonLabel,       // เพิ่ม
+  IonPopover,     // เพิ่ม
+  IonBadge        // เพิ่ม
 } from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import { 
+  chevronBack, expand, contract, layers, location, 
+  chevronDown, checkmark, gameController, add, remove, 
+  close, map, cube 
+} from 'ionicons/icons'; // Import icons ใหม่
 
 import { ThreeSceneService } from '../../services/floorplan/three-scene.service';
 import { FloorplanBuilderService } from '../../services/floorplan/floorplan-builder.service';
@@ -57,7 +68,13 @@ import { JoystickComponent } from '../joystick/joystick.component';
     IonSelect,
     IonSelectOption,
     IonTitle,
-    IonToolbar
+    IonToolbar,
+    IonList,
+    IonItem,
+    IonLabel,
+    IonPopover,
+    IonBadge,
+    TitleCasePipe
   ],
   providers: [DecimalPipe],
   templateUrl: './floor-plan.component.html',
@@ -66,6 +83,8 @@ import { JoystickComponent } from '../joystick/joystick.component';
 })
 export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
   @ViewChild('canvas') private canvasRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild(IonPopover) floorPopover!: IonPopover; // อ้างอิง Popover
+
   @Input() floorData: any;
   @Input() floors: any[] = [];
   @Input() activeFloorValue: number | null = null;
@@ -86,7 +105,7 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
   private resizeObserver?: ResizeObserver;
 
   private floorGroup: THREE.Group | null = null;
-  public currentView: 'iso' | 'top' = 'iso';
+  public currentView: 'iso' | 'top' = 'iso'; // รองรับแค่ iso/top ตาม segment
   public isFullscreen = false;
   public isJoystickVisible = true;
   public floorOptions: { label: string; value: number }[] = [];
@@ -98,21 +117,21 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
   private cameraLookAtTarget = new THREE.Vector3();
   private isInitialized = false;
   private subscriptions = new Subscription();
-  private cameraZoom = 1;
-  private readonly minCameraZoom = 0.6;
-  private readonly maxCameraZoom = 1.4;
-  private readonly cameraZoomStep = 0.15;
-
-  // 1. (เพิ่ม) ค่าคงที่ระยะห่างกล้อง (เพื่อให้เห็นครบทั้งตึก)
-  private readonly CAMERA_DISTANCE_FACTOR = 6.0;
-
-  // 2. (แก้ไข) ตัวแปรสำหรับ Real Zoom
+  
+  // Zoom configuration
   private currentZoomLevel = 1.0; 
   private readonly minZoomLevel = 0.5;
   private readonly maxZoomLevel = 4.0;
   private readonly zoomStep = 0.2;
+  private readonly CAMERA_DISTANCE_FACTOR = 6.0;
 
   constructor() {
+    addIcons({ 
+      chevronBack, expand, contract, layers, location, 
+      chevronDown, checkmark, gameController, add, remove, 
+      close, map, cube // ลงทะเบียน Icon
+    });
+
     this.subscriptions.add(
       this.interaction.currentZoneId$.subscribe(zoneId => {
         this.zoneChanged.emit(zoneId);
@@ -132,15 +151,12 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
     if (changes['floors']) {
       this.updateFloorOptions();
     }
-
     if (!this.isInitialized) return;
-
     if (changes['floorData'] && this.floorData) {
       this.threeScene.setGroundPlaneColor(this.floorData.color ?? 0xeeeeee);
       this.reloadFloorPlan();
       this.interaction.initialize(this.floorData);
     }
-
     if (changes['panToTarget']) {
       const selection = changes['panToTarget'].currentValue;
       if (selection) {
@@ -158,14 +174,11 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.threeScene.initialize(this.canvasRef.nativeElement);
     this.playerControls.initialize();
     this.interaction.initialize(this.floorData);
-
     this.threeScene.setGroundPlaneColor(this.floorData.color ?? 0xeeeeee);
     this.floorGroup = this.floorBuilder.buildFloor(this.floorData);
     this.threeScene.scene.add(this.floorGroup);
-
     this.snapCameraToTarget();
     this.startRenderingLoop();
-
     this.ngZone.runOutsideAngular(() => setTimeout(() => this.threeScene.resize(), 0));
 
     if (typeof window !== 'undefined' && 'ResizeObserver' in window) {
@@ -180,10 +193,7 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   public onDialogHide(): void {
-    // 1. บอก Service ให้ปิด Dialog (อัปเดต State)
     this.interaction.closeDetail();
-
-    // 2. สั่งให้เป้าหมายกล้องกลับไปหาตัวละครทันที
     if (this.playerControls.player) {
       this.cameraLookAtTarget.copy(this.playerControls.player.position);
     }
@@ -197,22 +207,29 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.resizeObserver?.disconnect();
   }
 
+  // --- UI Action Methods ---
+
+  setView(view: any): void { // รับ any เพื่อกัน error จาก segment value
+    const viewMode = view as 'iso' | 'top';
+    if (this.currentView === viewMode) return;
+    this.currentView = viewMode;
+    this.snapCameraToTarget();
+  }
+
   toggleView(): void {
-    this.currentView = this.currentView === 'iso' ? 'top' : 'iso';
-    this.snapCameraToTarget();
+    // สลับค่าระหว่าง 'iso' (3D) กับ 'top' (2D)
+    const nextView = this.currentView === 'iso' ? 'top' : 'iso';
+    this.setView(nextView);
   }
 
-  setView(view: 'iso' | 'top'): void {
-    if (this.currentView === view) return;
-    this.currentView = view;
-    this.snapCameraToTarget();
-  }
-
-  onFloorSelectionChange(floorNumber: number | null): void {
-    if (floorNumber == null || floorNumber === this.activeFloorValue) {
-      return;
-    }
+  // ใช้สำหรับเลือกชั้นจาก Popover
+  selectFloor(floorNumber: number): void {
+    if (this.activeFloorValue === floorNumber) return;
     this.floorChange.emit(floorNumber);
+    // ปิด Popover หลังจากเลือก
+    if (this.floorPopover) {
+      this.floorPopover.dismiss();
+    }
   }
 
   toggleFullscreen(): void {
@@ -221,29 +238,17 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   get canZoomIn(): boolean {
-    return this.cameraZoom - this.minCameraZoom > 0.01;
+    return this.currentZoomLevel < this.maxZoomLevel;
   }
 
   get canZoomOut(): boolean {
-    return this.maxCameraZoom - this.cameraZoom > 0.01;
+    return this.currentZoomLevel > this.minZoomLevel;
   }
 
   toggleJoystickVisibility(): void {
     this.isJoystickVisible = !this.isJoystickVisible;
   }
 
-  setJoystickVisibility(visible: boolean): void {
-    this.isJoystickVisible = visible;
-  }
-
-  onJoystickModeChange(value: any): void {
-    const strValue = String(value);
-    if (!strValue || strValue === 'undefined' || strValue === 'null') return;
-    
-    this.isJoystickVisible = strValue === 'on';
-  }
-
-  // 3. (แก้ไข) ฟังก์ชัน Zoom ให้เป็นการปรับ camera.zoom
   adjustCameraZoom(direction: 'in' | 'out'): void {
     const delta = direction === 'in' ? this.zoomStep : -this.zoomStep;
     const nextZoom = Math.min(this.maxZoomLevel, Math.max(this.minZoomLevel, this.currentZoomLevel + delta));
@@ -253,9 +258,7 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.threeScene.camera.updateProjectionMatrix();
   }
 
-  private clampZoom(value: number): number {
-    return Math.min(this.maxCameraZoom, Math.max(this.minCameraZoom, Number(value.toFixed(4))));
-  }
+  // --- Private Helpers ---
 
   private updateFloorOptions(): void {
     this.floorOptions = (this.floors ?? []).map(floor => ({
@@ -266,30 +269,24 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   private startRenderingLoop(): void {
     this.threeScene.startRenderingLoop(() => {
-      // (แก้ไข) ส่ง allowList เข้าไป
       this.playerControls.update(this.interaction.permissionList$.value); 
       this.interaction.checkPlayerZone();
       this.updateCameraPosition();
-      this.updatePlayerPositionDisplay();
     });
   }
 
   private updateCameraPosition(): void {
     if (!this.playerControls.player) return;
-
     if (!this.interaction.isDetailDialogVisible$.value) {
       this.cameraLookAtTarget.copy(this.playerControls.player.position);
     }
-
     const cameraLookAt = this.cameraLookAtTarget;
     let targetCameraPos = new THREE.Vector3();
-
     if (this.currentView === 'iso') {
       targetCameraPos.copy(cameraLookAt).add(this.getIsoCameraOffset());
     } else {
       targetCameraPos.set(cameraLookAt.x, this.getTopCameraHeight(), cameraLookAt.z);
     }
-
     const lerpAlpha = 0.08;
     this.threeScene.camera.position.lerp(targetCameraPos, lerpAlpha);
     this.threeScene.controls.target.lerp(cameraLookAt, lerpAlpha);
@@ -297,14 +294,11 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   private snapCameraToTarget(): void {
     if (!this.playerControls.player) return;
-
     const baseTarget = this.playerControls.player.position.clone();
     this.cameraLookAtTarget.copy(baseTarget);
-
     const cameraPosition = this.currentView === 'iso'
       ? baseTarget.clone().add(this.getIsoCameraOffset())
       : new THREE.Vector3(baseTarget.x, this.getTopCameraHeight(), baseTarget.z);
-
     this.threeScene.camera.position.copy(cameraPosition);
     this.threeScene.controls.target.copy(baseTarget);
   }
@@ -331,19 +325,6 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.snapCameraToTarget();
   }
 
-  private updatePlayerPositionDisplay(): void {
-    const player = this.playerControls.player;
-    if (!player) return;
-
-    const x = this.decimalPipe.transform(player.position.x, '1.1-1');
-    const z = this.decimalPipe.transform(player.position.z, '1.1-1');
-    const newDisplay = `X: ${x}, Z: ${z}`;
-
-    if (this.playerPositionDisplaySubject.value !== newDisplay) {
-      this.ngZone.run(() => this.playerPositionDisplaySubject.next(newDisplay));
-    }
-  }
-
   @HostListener('window:click', ['$event'])
   onClick(event: MouseEvent) {
     this.interaction.handleMouseClick(event, this.cameraLookAtTarget);
@@ -352,13 +333,11 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
   @HostListener('window:keydown', ['$event'])
   onKeyDown(event: KeyboardEvent): void {
     this.playerControls.setKeyboardInput(event.code, true);
-    event.preventDefault();
   }
 
   @HostListener('window:keyup', ['$event'])
   onKeyUp(event: KeyboardEvent): void {
     this.playerControls.setKeyboardInput(event.code, false);
-    event.preventDefault();
   }
 
   @HostListener('window:pointerup')
@@ -380,29 +359,24 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
       this.interaction.closeDetail();
       this.playerPositionDisplaySubject.next('');
     });
-
     if (this.floorGroup) {
       this.threeScene.scene.remove(this.floorGroup);
       this.floorBuilder.clearFloor();
     }
     this.floorGroup = this.floorBuilder.buildFloor(this.floorData);
     this.threeScene.scene.add(this.floorGroup);
-
     if (this.playerControls.player) {
       this.playerControls.player.position.set(0, this.playerControls.playerSize, 0);
       this.snapCameraToTarget();
     }
-    // (แก้ไข) สั่งให้ Service อัปเดตสิทธิ์ (ซึ่งจะไปเปลี่ยนสีประตู)
     this.interaction.setPermissionList(this.interaction.permissionList$.value);
   }
 
-  // 4. (แก้ไข) ใช้ระยะห่างคงที่ (6.0) ไม่เปลี่ยนตาม Zoom
   private getIsoCameraOffset(): THREE.Vector3 {
     const baseOffset = new THREE.Vector3(-5.5, 5.2, -5.5);
     return baseOffset.multiplyScalar(this.CAMERA_DISTANCE_FACTOR); 
   }
 
-  // 5. (แก้ไข) ใช้ระยะห่างคงที่ (6.0)
   private getTopCameraHeight(): number {
     return 28 * this.CAMERA_DISTANCE_FACTOR;
   }

@@ -1,174 +1,129 @@
-<div [class.fullscreen]="isFullscreen" class="floor-plan-wrapper">
+<div class="floor-plan-container" [class.fullscreen]="isFullscreen">
   <canvas #canvas></canvas>
 
-  <div class="floating-topbar" *ngIf="headerTitle || showBackButton" (click)="$event.stopPropagation()">
+  <div class="floating-header" (click)="$event.stopPropagation()">
     <ion-button
       *ngIf="showBackButton"
-      fill="clear"
-      class="back-chip"
-      shape="round"
+      class="circle-btn shadow-btn"
       (click)="backRequested.emit()"
-      aria-label="ย้อนกลับ"
     >
-      <ion-icon slot="start" name="chevron-back"></ion-icon>
-      กลับ
+      <ion-icon slot="icon-only" name="chevron-back"></ion-icon>
     </ion-button>
-
-    <div class="topbar-title">
-      <p class="eyebrow">การสำรวจ</p>
-      <h3>{{ headerTitle || floorData?.floorName }}</h3>
+    
+    <div class="header-pill shadow-btn" *ngIf="!isFullscreen && (headerTitle || floorData?.floorName)">
+      <span>{{ headerTitle || floorData?.floorName }}</span>
     </div>
 
     <ion-button
-      fill="clear"
-      class="toolbar-icon-button"
-      shape="round"
+      class="circle-btn shadow-btn"
+      style="margin-left: auto;" 
       (click)="toggleFullscreen()"
-      aria-label="สลับโหมดเต็มหน้าจอ"
     >
-      <ion-icon [name]="isFullscreen ? 'contract-outline' : 'expand-outline'" slot="icon-only"></ion-icon>
+      <ion-icon [name]="isFullscreen ? 'contract' : 'expand'" slot="icon-only"></ion-icon>
     </ion-button>
   </div>
 
-  <div class="floating-footer" (click)="$event.stopPropagation()">
-    <div class="footer-left" *ngIf="floorData">
-      <div class="floor-select-pill" *ngIf="floorOptions.length">
-        <ion-icon name="layers-outline"></ion-icon>
-        <ion-select
-          interface="popover"
-          [value]="activeFloorValue"
-          (ionChange)="onFloorSelectionChange($event.detail.value)"
-          placeholder="เลือกชั้น"
-        >
-          <ion-select-option *ngFor="let option of floorOptions" [value]="option.value">
-            {{ option.label }}
-          </ion-select-option>
-        </ion-select>
-      </div>
-
-      <div class="status-pill" *ngIf="interaction.currentZoneId$ | async as zoneId">
-        <ion-icon name="location-outline"></ion-icon>
-        <span>ตำแหน่ง: {{ zoneId }}</span>
-      </div>
+  <div class="floating-bottom-left" *ngIf="!isFullscreen" (click)="$event.stopPropagation()">
+    <div class="info-pill shadow-btn clickable" id="floor-trigger-btn">
+      <ion-icon name="layers" color="primary"></ion-icon>
+      <span>ชั้น {{ activeFloorValue }}</span>
+      <ion-icon name="chevron-down" size="small" color="medium"></ion-icon>
     </div>
+    <ion-popover trigger="floor-trigger-btn" triggerAction="click" alignment="start" class="floor-popover">
+       <ng-template>
+        <ion-content class="ion-no-padding">
+          <ion-list lines="none">
+            <ion-item button *ngFor="let option of floorOptions" (click)="selectFloor(option.value)" [detail]="false">
+              <ion-label [class.fw-bold]="activeFloorValue === option.value">{{ option.label }}</ion-label>
+              <ion-icon *ngIf="activeFloorValue === option.value" name="checkmark" slot="end" color="primary"></ion-icon>
+            </ion-item>
+          </ion-list>
+        </ion-content>
+      </ng-template>
+    </ion-popover>
 
-    <div class="footer-actions">
-      <div class="view-toggle-group" role="group" aria-label="สลับมุมมอง">
-        <ion-button
-          shape="round"
-          fill="solid"
-          [color]="currentView === 'top' ? 'primary' : 'light'"
-          class="toggle-button"
-          (click)="setView('top')"
-        >
-          <ion-icon slot="icon-only" name="map-outline"></ion-icon>
-          <span>2D</span>
-        </ion-button>
-        <ion-button
-          shape="round"
-          fill="solid"
-          [color]="currentView === 'iso' ? 'primary' : 'light'"
-          class="toggle-button"
-          (click)="setView('iso')"
-        >
-          <ion-icon slot="icon-only" name="cube-outline"></ion-icon>
-          <span>3D</span>
-        </ion-button>
-      </div>
+    <div class="info-pill shadow-btn" *ngIf="interaction.currentZoneId$ | async as zoneId">
+      <ion-icon name="location" color="secondary"></ion-icon>
+      <span>{{ zoneId }}</span>
     </div>
   </div>
 
-  <div class="camera-control-stack" (click)="$event.stopPropagation()">
-    <div class="joystick-toggle-chip">
-      <span>Joystick</span>
-        <ion-segment
-          class="chip-toggle"
-          mode="ios"
-          [value]="isJoystickVisible ? 'on' : 'off'"
-          (ionChange)="onJoystickModeChange($event.detail.value)"
-        >
-          <ion-segment-button value="on">ON</ion-segment-button>
-          <ion-segment-button value="off">OFF</ion-segment-button>
-        </ion-segment>
-    </div>
+  <div class="floating-bottom-right" *ngIf="!isFullscreen" (click)="$event.stopPropagation()">
+    
+    <ion-button 
+      class="circle-btn shadow-btn" 
+      (click)="toggleView()"
+    >
+      <span class="btn-text-content">
+        {{ currentView === 'iso' ? '3D' : '2D' }}
+      </span>
+    </ion-button>
 
-    <div class="zoom-controls">
-      <ion-button
-        fill="solid"
-        shape="round"
-        size="small"
-        class="zoom-button"
-        (click)="adjustCameraZoom('in')"
-        [disabled]="!canZoomIn"
-        aria-label="ซูมเข้า"
-      >
+    <ion-button 
+      class="circle-btn shadow-btn" 
+      (click)="toggleJoystickVisibility()"
+      [style.--color]="isJoystickVisible ? 'var(--ion-color-primary)' : '#666'"
+    >
+      <span class="btn-text-content">
+        {{ isJoystickVisible ? 'ON' : 'OFF' }}
+      </span>
+    </ion-button>
+
+    <div class="zoom-stack shadow-btn">
+      <ion-button class="zoom-btn" (click)="adjustCameraZoom('in')" [disabled]="!canZoomIn">
         <ion-icon slot="icon-only" name="add"></ion-icon>
       </ion-button>
-      <ion-button
-        fill="solid"
-        shape="round"
-        size="small"
-        class="zoom-button"
-        (click)="adjustCameraZoom('out')"
-        [disabled]="!canZoomOut"
-        aria-label="ซูมออก"
-      >
+      <div style="width: 20px; height: 1px; background: #ddd;"></div>
+      <ion-button class="zoom-btn" (click)="adjustCameraZoom('out')" [disabled]="!canZoomOut">
         <ion-icon slot="icon-only" name="remove"></ion-icon>
       </ion-button>
     </div>
+
   </div>
 
   <app-joystick *ngIf="isJoystickVisible"></app-joystick>
+
 </div>
 
 <ion-modal
   [isOpen]="detailDialogVisible"
   (didDismiss)="onDialogHide()"
-  cssClass="floor-detail-modal"
+  class="centered-detail-modal"
   [backdropDismiss]="true"
 >
   <ng-template>
-    <ion-header>
-      <ion-toolbar color="light">
-        <ion-title>รายละเอียดพื้นที่</ion-title>
-        <ion-buttons slot="end">
-          <ion-button fill="clear" (click)="onDialogHide()">
-            <ion-icon slot="icon-only" name="close"></ion-icon>
-          </ion-button>
-        </ion-buttons>
-      </ion-toolbar>
-    </ion-header>
+    <div class="modal-wrapper-custom" style="background: #fff; padding: 20px; width: 100%;">
+      <div class="modal-header" style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+        <h5 style="margin:0; font-weight:700;">รายละเอียด</h5>
+        <ion-button fill="clear" size="small" color="medium" (click)="onDialogHide()">
+          <ion-icon slot="icon-only" name="close"></ion-icon>
+        </ion-button>
+      </div>
 
-    <ion-content class="ion-padding">
-      <div *ngIf="interaction.selectedObject$ | async as selected" class="detail-content" (click)="$event.stopPropagation()">
-        <div class="detail-header">
-          <h3>{{ selected.data?.name || selected.data?.id }}</h3>
-          <p class="detail-subtitle">
-            {{ selected.type | titlecase }} • ชั้น {{ selected.data?.floor ?? floorData?.floor }}
-          </p>
-        </div>
+      <div class="modal-body" *ngIf="interaction.selectedObject$ | async as selected">
+        <h2 style="margin:0;">{{ selected.data?.name || selected.data?.id }}</h2>
+        <p style="color:#666; margin-top:4px;">{{ selected.type | titlecase }} • ชั้น {{ selected.data?.floor ?? floorData?.floor }}</p>
 
         <ng-container [ngSwitch]="selected.type">
-          <div class="detail-section" *ngSwitchCase="'door'">
-            <h4>สิทธิ์การเข้าใช้งาน</h4>
-            <p>
-              <strong>ID ประตู:</strong>
-              {{ selected.data.id }}
-            </p>
-            <p>
-              <strong>สถานะ:</strong>
-              <ng-container *ngIf="interaction.permissionList$ | async as list">
-                <span [ngClass]="list.includes(selected.data.id) ? 'status-unlocked' : 'status-locked'">
-                  {{ list.includes(selected.data.id) ? 'UNLOCKED' : 'LOCKED' }}
-                </span>
-              </ng-container>
-            </p>
+          <div *ngSwitchCase="'door'" style="background:#f9f9f9; padding:10px; border-radius:10px; margin-top:10px;">
+             <div style="display:flex; justify-content:space-between;">
+               <span>สถานะ</span>
+               <ng-container *ngIf="interaction.permissionList$ | async as list">
+                  <span [style.color]="list.includes(selected.data.id) ? 'green' : 'red'" style="font-weight:bold;">
+                    {{ list.includes(selected.data.id) ? 'UNLOCKED' : 'LOCKED' }}
+                  </span>
+               </ng-container>
+             </div>
           </div>
-          <div class="detail-section" *ngSwitchDefault>
-            <p class="detail-description">รอข้อมูลเพิ่มเติมสำหรับพื้นที่นี้</p>
+          <div *ngSwitchDefault style="margin-top:10px;">
+            <p>{{ selected.data?.description || 'ไม่มีข้อมูลเพิ่มเติม' }}</p>
           </div>
         </ng-container>
       </div>
-    </ion-content>
+      
+      <div class="modal-footer" style="margin-top: 20px;">
+        <ion-button expand="block" (click)="onDialogHide()">ตกลง</ion-button>
+      </div>
+    </div>
   </ng-template>
 </ion-modal>
