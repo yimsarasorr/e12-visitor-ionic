@@ -236,7 +236,7 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
     this.isJoystickVisible = visible;
   }
 
-  onJoystickModeChange(value: 'on' | 'off' | null): void {
+  onJoystickModeChange(value: string | null): void {
     if (!value) return;
     this.isJoystickVisible = value === 'on';
   }
