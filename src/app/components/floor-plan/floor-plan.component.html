@@ -81,15 +81,15 @@
   <div class="camera-control-stack" (click)="$event.stopPropagation()">
     <div class="joystick-toggle-chip">
       <span>Joystick</span>
-      <ion-segment
-        class="chip-toggle"
-        mode="ios"
-        [value]="isJoystickVisible ? 'on' : 'off'"
-        (ionChange)="onJoystickModeChange($event.detail.value)"
-      >
-        <ion-segment-button value="on">ON</ion-segment-button>
-        <ion-segment-button value="off">OFF</ion-segment-button>
-      </ion-segment>
+        <ion-segment
+          class="chip-toggle"
+          mode="ios"
+          [value]="isJoystickVisible ? 'on' : 'off'"
+          (ionChange)="onJoystickModeChange($event.detail.value as 'on' | 'off')"
+        >
+          <ion-segment-button value="on">ON</ion-segment-button>
+          <ion-segment-button value="off">OFF</ion-segment-button>
+        </ion-segment>
     </div>
 
     <div class="zoom-controls">
