@@ -20,22 +20,13 @@ import { FormsModule } from '@angular/forms';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import {
   IonButton,
-  IonButtons,
   IonContent,
-  IonHeader,
   IonIcon,
   IonModal,
-  IonSegment,
-  IonSegmentButton,
-  IonSelect,
-  IonSelectOption,
-  IonTitle,
-  IonToolbar,
-  IonList,        // เพิ่ม
-  IonItem,        // เพิ่ม
-  IonLabel,       // เพิ่ม
-  IonPopover,     // เพิ่ม
-  IonBadge        // เพิ่ม
+  IonList,
+  IonItem,
+  IonLabel,
+  IonPopover
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { 
@@ -58,22 +49,13 @@ import { JoystickComponent } from '../joystick/joystick.component';
     FormsModule,
     JoystickComponent,
     IonButton,
-    IonButtons,
     IonContent,
-    IonHeader,
     IonIcon,
     IonModal,
-    IonSegment,
-    IonSegmentButton,
-    IonSelect,
-    IonSelectOption,
-    IonTitle,
-    IonToolbar,
     IonList,
     IonItem,
     IonLabel,
     IonPopover,
-    IonBadge,
     TitleCasePipe
   ],
   providers: [DecimalPipe],

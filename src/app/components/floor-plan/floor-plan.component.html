@@ -15,8 +15,7 @@
     </div>
 
     <ion-button
-      class="circle-btn shadow-btn"
-      style="margin-left: auto;" 
+      class="circle-btn shadow-btn fullscreen-toggle"
       (click)="toggleFullscreen()"
     >
       <ion-icon [name]="isFullscreen ? 'contract' : 'expand'" slot="icon-only"></ion-icon>
@@ -49,7 +48,7 @@
   </div>
 
   <div class="floating-bottom-right" *ngIf="!isFullscreen" (click)="$event.stopPropagation()">
-    
+
     <ion-button 
       class="circle-btn shadow-btn" 
       (click)="toggleView()"
@@ -73,7 +72,7 @@
       <ion-button class="zoom-btn" (click)="adjustCameraZoom('in')" [disabled]="!canZoomIn">
         <ion-icon slot="icon-only" name="add"></ion-icon>
       </ion-button>
-      <div style="width: 20px; height: 1px; background: #ddd;"></div>
+      <div class="zoom-divider"></div>
       <ion-button class="zoom-btn" (click)="adjustCameraZoom('out')" [disabled]="!canZoomOut">
         <ion-icon slot="icon-only" name="remove"></ion-icon>
       </ion-button>
@@ -92,36 +91,36 @@
   [backdropDismiss]="true"
 >
   <ng-template>
-    <div class="modal-wrapper-custom" style="background: #fff; padding: 20px; width: 100%;">
-      <div class="modal-header" style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-        <h5 style="margin:0; font-weight:700;">รายละเอียด</h5>
+    <div class="modal-wrapper-custom">
+      <div class="modal-header">
+        <h5 class="modal-heading">รายละเอียด</h5>
         <ion-button fill="clear" size="small" color="medium" (click)="onDialogHide()">
           <ion-icon slot="icon-only" name="close"></ion-icon>
         </ion-button>
       </div>
 
       <div class="modal-body" *ngIf="interaction.selectedObject$ | async as selected">
-        <h2 style="margin:0;">{{ selected.data?.name || selected.data?.id }}</h2>
-        <p style="color:#666; margin-top:4px;">{{ selected.type | titlecase }} • ชั้น {{ selected.data?.floor ?? floorData?.floor }}</p>
+        <h2 class="modal-title">{{ selected.data?.name || selected.data?.id }}</h2>
+        <p class="modal-subtitle">{{ selected.type | titlecase }} • ชั้น {{ selected.data?.floor ?? floorData?.floor }}</p>
 
         <ng-container [ngSwitch]="selected.type">
-          <div *ngSwitchCase="'door'" style="background:#f9f9f9; padding:10px; border-radius:10px; margin-top:10px;">
-             <div style="display:flex; justify-content:space-between;">
+          <div *ngSwitchCase="'door'" class="door-status-card">
+             <div class="door-status-row">
                <span>สถานะ</span>
                <ng-container *ngIf="interaction.permissionList$ | async as list">
-                  <span [style.color]="list.includes(selected.data.id) ? 'green' : 'red'" style="font-weight:bold;">
+                  <span [ngClass]="list.includes(selected.data.id) ? 'door-status-unlocked' : 'door-status-locked'">
                     {{ list.includes(selected.data.id) ? 'UNLOCKED' : 'LOCKED' }}
                   </span>
                </ng-container>
              </div>
           </div>
-          <div *ngSwitchDefault style="margin-top:10px;">
+          <div *ngSwitchDefault class="default-status-card">
             <p>{{ selected.data?.description || 'ไม่มีข้อมูลเพิ่มเติม' }}</p>
           </div>
         </ng-container>
       </div>
       
-      <div class="modal-footer" style="margin-top: 20px;">
+      <div class="modal-footer">
         <ion-button expand="block" (click)="onDialogHide()">ตกลง</ion-button>
       </div>
     </div>
