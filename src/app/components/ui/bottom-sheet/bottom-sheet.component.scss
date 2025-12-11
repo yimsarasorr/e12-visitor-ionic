@@ -38,6 +38,7 @@
 .sheet-container.state-hidden {
   height: 0 !important;
   transform: translateY(100%);
+  pointer-events: none;
 }
 
 .sheet-container.state-peek {

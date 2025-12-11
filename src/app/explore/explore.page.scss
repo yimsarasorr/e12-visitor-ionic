@@ -11,6 +11,29 @@ ion-content {
   --view-bottom-offset: clamp(6rem, 24vh, 14rem);
 }
 
+.screen-wrapper.fullscreen-mode {
+  --view-bottom-offset: 0;
+}
+
+:host ::ng-deep ion-modal.floor-plan-fullscreen-modal {
+  --width: 100vw;
+  --height: 100vh;
+  --border-radius: 0;
+  --box-shadow: none;
+  --background: transparent;
+  --backdrop-opacity: 0.35;
+  --backdrop-filter: blur(4px);
+}
+
+:host ::ng-deep ion-modal.floor-plan-fullscreen-modal::part(content) {
+  padding: 0;
+  display: flex;
+}
+
+:host ::ng-deep ion-modal.floor-plan-fullscreen-modal app-floor-plan {
+  flex: 1;
+}
+
 .screen-header {
   flex-shrink: 0;
   z-index: 10;
@@ -82,6 +105,15 @@ ion-content {
 }
 
 .view-pane--map app-map-view {
+  flex: 1;
+  min-height: 0;
+}
+
+.view-pane--floor {
+  position: relative;
+}
+
+.view-pane--floor app-floor-plan {
   flex: 1;
   min-height: 0;
 }

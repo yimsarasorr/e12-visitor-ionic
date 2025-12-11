@@ -50,6 +50,7 @@ export class ExplorePage implements OnInit, AfterViewInit, OnDestroy {
   public selectedFloorValue: number | null = null;
   public lastActiveFloor: number | null = null;
   public isLoading = false;
+  public isFloorFullscreen = false;
   public selectedUserId: string | null = null;
   public selectedUserProfile: UserProfile | null = null;
   private currentPermissionSubscription?: Subscription;
@@ -131,9 +132,10 @@ export class ExplorePage implements OnInit, AfterViewInit, OnDestroy {
     this.selectedFloorIndex = index;
     this.selectedFloorValue = floorNumber;
     this.viewMode = 'floor';
+    this.isFloorFullscreen = false;
 
     setTimeout(() => {
-      this.bottomSheetService.showAccessList(this.currentPermissionList);
+      this.bottomSheetService.showAccessList(this.currentPermissionList, 'peek');
       this.bottomSheetService.setExpansionState('peek');
     }, 100);
 
@@ -143,6 +145,7 @@ export class ExplorePage implements OnInit, AfterViewInit, OnDestroy {
   resetToBuildingOverview(): void {
     if (this.viewMode === 'floor') {
       this.viewMode = 'building';
+      this.isFloorFullscreen = false;
       this.bottomSheetService.close();
     } else {
       this.viewMode = 'map';
@@ -216,7 +219,7 @@ export class ExplorePage implements OnInit, AfterViewInit, OnDestroy {
           this.floorplanInteraction.setPermissionList(this.currentPermissionList);
 
           if (this.viewMode === 'floor') {
-            this.bottomSheetService.showAccessList(this.currentPermissionList);
+            this.bottomSheetService.showAccessList(this.currentPermissionList, 'peek');
             this.bottomSheetService.setExpansionState('peek');
           }
         },
@@ -225,7 +228,7 @@ export class ExplorePage implements OnInit, AfterViewInit, OnDestroy {
           this.currentPermissionList = [];
           this.floorplanInteraction.setPermissionList([]);
           if (this.viewMode === 'floor') {
-            this.bottomSheetService.showAccessList([]);
+            this.bottomSheetService.showAccessList([], 'peek');
             this.bottomSheetService.setExpansionState('peek');
           }
         }
@@ -332,5 +335,19 @@ export class ExplorePage implements OnInit, AfterViewInit, OnDestroy {
     const marginBottom = parseFloat(computed.marginBottom || '0');
     const totalHeight = baseHeight + marginTop + marginBottom;
     document.documentElement.style.setProperty('--vms-tab-bar-height', `${totalHeight}px`);
+  }
+
+  onFloorFullscreenChange(fullscreen: boolean): void {
+    this.isFloorFullscreen = fullscreen;
+
+    if (fullscreen) {
+      this.bottomSheetService.close();
+    } else if (this.viewMode === 'floor') {
+      // Delay to allow bottom sheet component to re-render when it was removed
+      setTimeout(() => {
+        this.bottomSheetService.showAccessList(this.currentPermissionList, 'peek');
+        this.bottomSheetService.setExpansionState('peek');
+      }, 0);
+    }
   }
 }

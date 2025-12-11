@@ -1,4 +1,4 @@
-<ion-header class="ion-no-border">
+<ion-header class="ion-no-border" *ngIf="!isFloorFullscreen">
   <app-fastpass-header
     class="screen-header"
     [selectedUserId]="selectedUserId"
@@ -6,9 +6,9 @@
   </app-fastpass-header>
 </ion-header>
 
-<ion-content [fullscreen]="false" [scrollY]="false">
-  <div class="screen-wrapper">
-    <div class="content-container" [class.has-toolbar]="viewMode !== 'map'">
+<ion-content [fullscreen]="isFloorFullscreen" [scrollY]="false">
+  <div class="screen-wrapper" [class.fullscreen-mode]="isFloorFullscreen">
+    <div class="content-container" [class.has-toolbar]="viewMode !== 'map' && !isFloorFullscreen">
       <ng-container [ngSwitch]="viewMode">
         <div *ngSwitchCase="'map'" class="view-pane view-pane--map">
           <app-map-view></app-map-view>
@@ -38,23 +38,44 @@
           </ion-card-content>
         </ion-card>
 
-        <ion-card *ngSwitchCase="'floor'" class="view-card">
-          <ion-card-content>
-            <app-floor-plan
-              [floorData]="selectedFloorData"
-              [floors]="buildingData.floors"
-              [activeFloorValue]="selectedFloorValue"
-              [showBackButton]="true"
-              [headerTitle]="selectedFloorData?.floorName"
-              (backRequested)="resetToBuildingOverview()"
-              (floorChange)="onFloorSelected($event)">
-            </app-floor-plan>
-          </ion-card-content>
-        </ion-card>
+        <div *ngSwitchCase="'floor'" class="view-pane view-pane--floor">
+          <app-floor-plan
+            *ngIf="!isFloorFullscreen"
+            [floorData]="selectedFloorData"
+            [floors]="buildingData.floors"
+            [activeFloorValue]="selectedFloorValue"
+            [showBackButton]="true"
+            [headerTitle]="selectedFloorData?.floorName"
+            [fullscreenContext]="false"
+            (backRequested)="resetToBuildingOverview()"
+            (floorChange)="onFloorSelected($event)"
+            (fullscreenChange)="onFloorFullscreenChange($event)">
+          </app-floor-plan>
+
+          <ion-modal
+            [isOpen]="isFloorFullscreen"
+            cssClass="floor-plan-fullscreen-modal"
+            [backdropDismiss]="false"
+            (didDismiss)="onFloorFullscreenChange(false)">
+            <ng-template>
+              <app-floor-plan
+                [floorData]="selectedFloorData"
+                [floors]="buildingData.floors"
+                [activeFloorValue]="selectedFloorValue"
+                [showBackButton]="true"
+                [headerTitle]="selectedFloorData?.floorName"
+                [fullscreenContext]="true"
+                (backRequested)="resetToBuildingOverview()"
+                (floorChange)="onFloorSelected($event)"
+                (fullscreenChange)="onFloorFullscreenChange($event)">
+              </app-floor-plan>
+            </ng-template>
+          </ion-modal>
+        </div>
       </ng-container>
     </div>
 
-    <app-bottom-sheet></app-bottom-sheet>
+    <app-bottom-sheet *ngIf="!isFloorFullscreen"></app-bottom-sheet>
   </div>
 
 </ion-content>

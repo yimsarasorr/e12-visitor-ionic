@@ -1,5 +1,4 @@
 /* ไฟล์: src/app/components/floor-plan/floor-plan.component.css */
-
 :host {
   display: block;
   width: 100%;
@@ -13,14 +12,13 @@
   position: relative;
   background-color: #f4f5f8;
   overflow: hidden;
-  border-radius: 16px; /* มุมมนของ Container หลัก */
+  border-radius: 16px;
+  --floor-bottom-offset: 112px;
 }
 
-.floor-plan-container.fullscreen {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  z-index: 9999;
-  border-radius: 0; /* เต็มจอไม่ต้องมน */
+.floor-plan-container.compact {
+  border-radius: 0;
+  --floor-bottom-offset: 24px;
 }
 
 canvas {
@@ -60,6 +58,8 @@ ion-button.circle-btn::part(native) {
   min-width: 0;
   overflow: hidden;
 }
+
+
 
 .fullscreen-toggle {
   margin-left: auto;
@@ -180,6 +180,20 @@ ion-button.circle-btn::part(native) {
   pointer-events: auto;
 }
 
+.floor-plan-container.compact .floating-header {
+  left: auto;
+  right: 16px;
+  justify-content: flex-end;
+}
+
+.floor-plan-container.compact .header-pill {
+  display: none;
+}
+
+.floor-plan-container.compact .fullscreen-toggle {
+  margin-left: 0;
+}
+
 .header-pill {
   padding: 8px 16px;
   border-radius: 24px;
@@ -194,7 +208,7 @@ ion-button.circle-btn::part(native) {
 /* --- 2. Bottom Left (Floor & Location) --- */
 .floating-bottom-left {
   position: absolute;
-  bottom: 24px;
+  bottom: var(--floor-bottom-offset);
   left: 16px;
   display: flex;
   flex-direction: row;
@@ -221,7 +235,7 @@ ion-button.circle-btn::part(native) {
 /* --- 3. Bottom Right (Controls) --- */
 .floating-bottom-right {
   position: absolute;
-  bottom: 24px;
+  bottom: var(--floor-bottom-offset);
   right: 16px;
   display: flex;
   flex-direction: column;
@@ -256,7 +270,7 @@ ion-button.circle-btn::part(native) {
 /* --- Joystick Position --- */
 app-joystick {
   position: absolute;
-  bottom: 120px; /* ดันขึ้นมาตามขอ */
+  bottom: calc(var(--floor-bottom-offset) + 72px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 5;
@@ -273,3 +287,4 @@ app-joystick {
   align-items: center;
   justify-content: center;
 }
+

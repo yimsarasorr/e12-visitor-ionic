@@ -1,7 +1,7 @@
 import { Component, inject, ElementRef, ViewChild, Renderer2, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
-import { BottomSheetService, SheetData } from '../../../services/bottom-sheet.service';
+import { BottomSheetService, SheetData, ExpansionState } from '../../../services/bottom-sheet.service';
 import { AccessListComponent } from '../../access-list/access-list.component';
 
 // 1. Import addIcons และชื่อ Icon ที่ใช้
@@ -29,7 +29,7 @@ export class BottomSheetComponent implements OnInit {
   @ViewChild('sheet') sheetRef!: ElementRef;
 
   currentData: SheetData = { mode: 'hidden' };
-  currentState: 'hidden' | 'peek' | 'default' | 'expanded' = 'default';
+  currentState: 'hidden' | ExpansionState = 'peek';
 
   private startY = 0;
   private startHeight = 0;
@@ -95,21 +95,25 @@ export class BottomSheetComponent implements OnInit {
     this.renderer.removeStyle(el, 'height');
 
     const ratio = el.offsetHeight / window.innerHeight;
-    if (ratio > 0.6) this.setState('expanded', true);
-    else if (ratio > 0.25) this.setState('default', true);
-    else this.setState('peek', true);
+    if (ratio > 0.65) {
+      this.setState('expanded', true);
+    } else if (ratio > 0.35) {
+      this.setState('default', true);
+    } else {
+      this.setState('peek', true);
+    }
   }
 
   private getClientY(event: TouchEvent | MouseEvent): number {
     return event instanceof TouchEvent ? event.touches[0].clientY : event.clientY;
   }
 
-  private setState(state: 'hidden' | 'peek' | 'default' | 'expanded', emit = false) {
+  private setState(state: 'hidden' | ExpansionState, emit = false) {
     if (this.currentState === state) return;
     this.currentState = state;
 
     if (emit && state !== 'hidden') {
-      this.bottomSheetService.setExpansionState(state);
+      this.bottomSheetService.setExpansionState(state as ExpansionState);
     }
   }
   
