@@ -338,7 +338,12 @@ export class ExplorePage implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onFloorFullscreenChange(fullscreen: boolean): void {
+    const previous = this.isFloorFullscreen;
     this.isFloorFullscreen = fullscreen;
+
+    if (previous === fullscreen) {
+      return;
+    }
 
     if (fullscreen) {
       this.bottomSheetService.close();
@@ -347,7 +352,7 @@ export class ExplorePage implements OnInit, AfterViewInit, OnDestroy {
       setTimeout(() => {
         this.bottomSheetService.showAccessList(this.currentPermissionList, 'peek');
         this.bottomSheetService.setExpansionState('peek');
-      }, 0);
+      }, 120);
     }
   }
 }

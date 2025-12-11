@@ -6,6 +6,14 @@ import { ThreeSceneService } from './three-scene.service';
 import { FloorplanBuilderService } from './floorplan-builder.service';
 import { PlayerControlsService } from './player-controls.service';
 
+export interface FloorplanViewportState {
+  view: 'iso' | 'top';
+  playerPosition: { x: number; y: number; z: number };
+  cameraPosition: { x: number; y: number; z: number };
+  cameraTarget: { x: number; y: number; z: number };
+  zoom: number;
+}
+
 interface Boundary {
   min: { x: number; y: number };
   max: { x: number; y: number };
@@ -28,6 +36,7 @@ export class FloorplanInteractionService {
   public readonly currentZoneId$ = new BehaviorSubject<string | null>(null);
   public readonly isDetailDialogVisible$ = new BehaviorSubject<boolean>(false);
   public readonly selectedObject$ = new BehaviorSubject<{ type: string, data: any } | null>(null);
+  private viewportState: FloorplanViewportState | null = null;
 
   /**
    * เริ่มต้น Service และรับข้อมูล floorData
@@ -138,5 +147,29 @@ export class FloorplanInteractionService {
       position.z >= boundary.min.y &&
       position.z <= boundary.max.y
     );
+  }
+
+  public setViewportState(state: FloorplanViewportState | null): void {
+    this.viewportState = state
+      ? {
+          view: state.view,
+          playerPosition: { ...state.playerPosition },
+          cameraPosition: { ...state.cameraPosition },
+          cameraTarget: { ...state.cameraTarget },
+          zoom: state.zoom
+        }
+      : null;
+  }
+
+  public getViewportState(): FloorplanViewportState | null {
+    return this.viewportState
+      ? {
+          view: this.viewportState.view,
+          playerPosition: { ...this.viewportState.playerPosition },
+          cameraPosition: { ...this.viewportState.cameraPosition },
+          cameraTarget: { ...this.viewportState.cameraTarget },
+          zoom: this.viewportState.zoom
+        }
+      : null;
   }
 }

@@ -11,7 +11,7 @@ export class PlayerControlsService {
   private threeSceneService = inject(ThreeSceneService);
   private floorplanBuilder = inject(FloorplanBuilderService);
 
-  public player!: THREE.Mesh;
+  public player: THREE.Mesh | null = null;
   public playerSize = 0.5;
   private playerSpeed = 0.1;
 
@@ -24,6 +24,7 @@ export class PlayerControlsService {
   private rightDirection = new THREE.Vector3();
 
   public initialize(): void {
+    this.dispose();
     this.createPlayer();
   }
 
@@ -34,6 +35,26 @@ export class PlayerControlsService {
     this.player.position.set(0, this.playerSize, 0);
     this.player.castShadow = true;
     this.threeSceneService.scene.add(this.player);
+  }
+
+  public dispose(): void {
+    if (this.player) {
+      try {
+        this.threeSceneService.scene?.remove(this.player);
+        this.player.geometry?.dispose();
+        if (Array.isArray(this.player.material)) {
+          this.player.material.forEach(material => material.dispose());
+        } else {
+          this.player.material?.dispose?.();
+        }
+      } catch {
+        // ignore disposal errors
+      }
+    }
+
+    this.player = null;
+    this.moveVector.set(0, 0);
+    Object.keys(this.keys).forEach(key => ((this.keys as any)[key] = false));
   }
 
   /**

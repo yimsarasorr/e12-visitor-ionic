@@ -7,7 +7,7 @@
 
   <div class="floating-header" (click)="$event.stopPropagation()">
     <ion-button
-      *ngIf="showBackButton && !fullscreenContext"
+      *ngIf="showBackButton"
       class="circle-btn shadow-btn"
       (click)="backRequested.emit()"
     >
@@ -26,7 +26,7 @@
     </ion-button>
   </div>
 
-  <div class="floating-bottom-left" *ngIf="!fullscreenContext" (click)="$event.stopPropagation()">
+  <div class="floating-bottom-left" (click)="$event.stopPropagation()">
     <div class="info-pill shadow-btn clickable" id="floor-trigger-btn">
       <ion-icon name="layers" color="primary"></ion-icon>
       <span>ชั้น {{ activeFloorValue }}</span>
@@ -51,7 +51,7 @@
     </div>
   </div>
 
-  <div class="floating-bottom-right" *ngIf="!fullscreenContext" (click)="$event.stopPropagation()">
+  <div class="floating-bottom-right" (click)="$event.stopPropagation()">
 
     <ion-button 
       class="circle-btn shadow-btn" 
@@ -84,7 +84,7 @@
 
   </div>
 
-  <app-joystick *ngIf="isJoystickVisible && !fullscreenContext"></app-joystick>
+  <app-joystick *ngIf="isJoystickVisible"></app-joystick>
 
 </div>
 

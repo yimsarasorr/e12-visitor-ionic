@@ -38,7 +38,10 @@ import {
 import { ThreeSceneService } from '../../services/floorplan/three-scene.service';
 import { FloorplanBuilderService } from '../../services/floorplan/floorplan-builder.service';
 import { PlayerControlsService } from '../../services/floorplan/player-controls.service';
-import { FloorplanInteractionService } from '../../services/floorplan/floorplan-interaction.service';
+import {
+  FloorplanInteractionService,
+  FloorplanViewportState
+} from '../../services/floorplan/floorplan-interaction.service';
 import { JoystickComponent } from '../joystick/joystick.component';
 
 @Component({
@@ -133,6 +136,9 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
     if (changes['floors']) {
       this.updateFloorOptions();
     }
+    if (!this.isInitialized) {
+      this.initializeSceneIfNeeded();
+    }
     if (!this.isInitialized) return;
     if (changes['floorData'] && this.floorData) {
       this.threeScene.setGroundPlaneColor(this.floorData.color ?? 0xeeeeee);
@@ -150,28 +156,7 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    if (this.isInitialized || !this.floorData) return;
-    this.isInitialized = true;
-
-    this.threeScene.initialize(this.canvasRef.nativeElement);
-    this.playerControls.initialize();
-    this.interaction.initialize(this.floorData);
-    this.threeScene.setGroundPlaneColor(this.floorData.color ?? 0xeeeeee);
-    this.floorGroup = this.floorBuilder.buildFloor(this.floorData);
-    this.threeScene.scene.add(this.floorGroup);
-    this.snapCameraToTarget();
-    this.startRenderingLoop();
-    this.ngZone.runOutsideAngular(() => setTimeout(() => this.threeScene.resize(), 0));
-
-    if (typeof window !== 'undefined' && 'ResizeObserver' in window) {
-      this.ngZone.runOutsideAngular(() => {
-        this.resizeObserver = new ResizeObserver(() => this.threeScene.resize());
-        const hostElement = this.canvasRef.nativeElement?.parentElement as Element | null;
-        if (hostElement) {
-          this.resizeObserver.observe(hostElement);
-        }
-      });
-    }
+    this.initializeSceneIfNeeded();
   }
 
   public onDialogHide(): void {
@@ -182,11 +167,14 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.saveViewportState();
     this.isInitialized = false;
+    this.playerControls.dispose();
     this.threeScene.destroy();
     this.floorBuilder.clearFloor();
     this.subscriptions.unsubscribe();
     this.resizeObserver?.disconnect();
+    this.resizeObserver = undefined;
   }
 
   // --- UI Action Methods ---
@@ -212,6 +200,7 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   toggleFullscreen(): void {
+    this.saveViewportState();
     this.fullscreenChange.emit(!this.fullscreenContext);
   }
 
@@ -265,6 +254,39 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   // --- Private Helpers ---
+
+  private initializeSceneIfNeeded(): void {
+    if (this.isInitialized) return;
+    if (!this.floorData || !this.canvasRef?.nativeElement) return;
+
+    this.isInitialized = true;
+
+    this.threeScene.initialize(this.canvasRef.nativeElement);
+    this.playerControls.initialize();
+    this.interaction.initialize(this.floorData);
+    this.threeScene.setGroundPlaneColor(this.floorData.color ?? 0xeeeeee);
+    this.floorGroup = this.floorBuilder.buildFloor(this.floorData);
+    this.threeScene.scene.add(this.floorGroup);
+    this.snapCameraToTarget();
+    this.startRenderingLoop();
+
+    this.ngZone.runOutsideAngular(() => setTimeout(() => this.threeScene.resize(), 0));
+    this.restoreViewportState();
+
+    this.setupResizeObserver();
+  }
+
+  private setupResizeObserver(): void {
+    if (this.resizeObserver || typeof window === 'undefined' || !('ResizeObserver' in window)) {
+      return;
+    }
+    const hostElement = this.canvasRef.nativeElement?.parentElement as Element | null;
+    if (!hostElement) {
+      return;
+    }
+    this.resizeObserver = new ResizeObserver(() => this.threeScene.resize());
+    this.ngZone.runOutsideAngular(() => this.resizeObserver?.observe(hostElement));
+  }
 
   private updateFloorOptions(): void {
     this.floorOptions = (this.floors ?? []).map(floor => ({
@@ -332,6 +354,7 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   private reloadFloorPlan(): void {
+    this.interaction.setViewportState(null);
     this.ngZone.run(() => {
       this.interaction.currentZoneId$.next(null);
       this.interaction.closeDetail();
@@ -348,6 +371,77 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
       this.snapCameraToTarget();
     }
     this.interaction.setPermissionList(this.interaction.permissionList$.value);
+  }
+
+  private saveViewportState(): void {
+    if (!this.isInitialized) {
+      return;
+    }
+    if (!this.playerControls.player || !this.threeScene.camera || !this.threeScene.controls) {
+      return;
+    }
+
+    const payload: FloorplanViewportState = {
+      view: this.currentView,
+      playerPosition: {
+        x: this.playerControls.player.position.x,
+        y: this.playerControls.player.position.y,
+        z: this.playerControls.player.position.z
+      },
+      cameraPosition: {
+        x: this.threeScene.camera.position.x,
+        y: this.threeScene.camera.position.y,
+        z: this.threeScene.camera.position.z
+      },
+      cameraTarget: {
+        x: this.threeScene.controls.target.x,
+        y: this.threeScene.controls.target.y,
+        z: this.threeScene.controls.target.z
+      },
+      zoom: this.threeScene.camera.zoom
+    };
+
+    this.interaction.setViewportState(payload);
+  }
+
+  private restoreViewportState(): void {
+    const state = this.interaction.getViewportState();
+    if (!state) {
+      return;
+    }
+
+    this.currentView = state.view;
+
+    if (this.playerControls.player) {
+      this.playerControls.player.position.set(
+        state.playerPosition.x,
+        state.playerPosition.y,
+        state.playerPosition.z
+      );
+    }
+
+    this.cameraLookAtTarget.set(
+      state.cameraTarget.x,
+      state.cameraTarget.y,
+      state.cameraTarget.z
+    );
+
+    this.threeScene.camera.position.set(
+      state.cameraPosition.x,
+      state.cameraPosition.y,
+      state.cameraPosition.z
+    );
+
+    this.threeScene.controls.target.set(
+      state.cameraTarget.x,
+      state.cameraTarget.y,
+      state.cameraTarget.z
+    );
+
+    this.currentZoomLevel = state.zoom;
+    this.threeScene.camera.zoom = state.zoom;
+    this.threeScene.camera.updateProjectionMatrix();
+    this.threeScene.controls.update();
   }
 
   private getIsoCameraOffset(): THREE.Vector3 {
