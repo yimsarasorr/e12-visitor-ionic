@@ -124,6 +124,14 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
     );
 
     this.subscriptions.add(
+      this.interaction.focusRequest$.subscribe(target => {
+        if (target?.data) {
+          this.panCameraToObject(target.data);
+        }
+      })
+    );
+
+    this.subscriptions.add(
       this.interaction.isDetailDialogVisible$.subscribe(visible => {
         this.ngZone.run(() => {
           this.detailDialogVisible = visible;

@@ -1,6 +1,6 @@
 // src/app/services/floorplan/floorplan-interaction.service.ts
 import { Injectable, NgZone, inject } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 import * as THREE from 'three';
 import { ThreeSceneService } from './three-scene.service';
 import { FloorplanBuilderService } from './floorplan-builder.service';
@@ -37,6 +37,8 @@ export class FloorplanInteractionService {
   public readonly isDetailDialogVisible$ = new BehaviorSubject<boolean>(false);
   public readonly selectedObject$ = new BehaviorSubject<{ type: string, data: any } | null>(null);
   private viewportState: FloorplanViewportState | null = null;
+  private focusRequestSubject = new Subject<{ type: string; data: any }>();
+  public readonly focusRequest$ = this.focusRequestSubject.asObservable();
 
   /**
    * เริ่มต้น Service และรับข้อมูล floorData
@@ -44,6 +46,10 @@ export class FloorplanInteractionService {
   public initialize(floorData: any): void {
     this.floorData = floorData;
     this.floorBuilder.updateDoorMaterials(this.permissionList$.value); // <--- แก้ไข
+  }
+
+  public getCurrentFloorData(): any {
+    return this.floorData;
   }
 
   /**
@@ -56,8 +62,17 @@ export class FloorplanInteractionService {
     // อัปเดต Dialog ถ้าเปิดอยู่
     const currentSelection = this.selectedObject$.value;
     if (this.isDetailDialogVisible$.value && currentSelection?.type === 'door') {
-      this.selectedObject$.next(currentSelection); 
+      this.selectedObject$.next(currentSelection);
     }
+  }
+
+  public focusOnAsset(assetId: string): void {
+    if (!this.floorData?.zones) return;
+    const match = this.findAssetById(assetId);
+    if (!match) return;
+    this.selectedObject$.next({ type: match.type, data: match.data });
+    this.isDetailDialogVisible$.next(true);
+    this.focusRequestSubject.next(match);
   }
 
   /**
@@ -147,6 +162,28 @@ export class FloorplanInteractionService {
       position.z >= boundary.min.y &&
       position.z <= boundary.max.y
     );
+  }
+
+  private findAssetById(assetId: string): { type: string; data: any } | null {
+    for (const zone of this.floorData?.zones ?? []) {
+      for (const room of zone.rooms ?? []) {
+        if (room.id === assetId) {
+          return { type: 'room', data: room };
+        }
+        for (const door of room.doors ?? []) {
+          if (door.id === assetId) {
+            const payload = { ...room, selectedDoor: door };
+            return { type: 'door', data: payload };
+          }
+        }
+      }
+      for (const area of zone.areas ?? []) {
+        if (area.id === assetId) {
+          return { type: 'area', data: area };
+        }
+      }
+    }
+    return null;
   }
 
   public setViewportState(state: FloorplanViewportState | null): void {

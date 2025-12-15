@@ -21,9 +21,9 @@ export class FloorplanBuilderService {
   private readonly circulationColor = new THREE.Color('#38bdf8');
   private readonly verticalColor = new THREE.Color('#a855f7');
   private readonly serviceColor = new THREE.Color('#f0abfc');
-  private readonly roomGradientStart = new THREE.Color('#3b82f6');
-  private readonly roomGradientMid = new THREE.Color('#a855f7');
-  private readonly roomGradientEnd = new THREE.Color('#f97316');
+  private readonly roomGradientStart = new THREE.Color('#7c3aed');
+  private readonly roomGradientMid = new THREE.Color('#3b82f6');
+  private readonly roomGradientEnd = new THREE.Color('#06b6d4');
 
   // Materials
   private wallMaterial!: THREE.MeshStandardMaterial;
@@ -89,6 +89,8 @@ export class FloorplanBuilderService {
     this.clearFloor(); // ล้างของเก่าก่อน (ถ้ามี)
     this.resetColorAssignments();
     this.floorGroup = new THREE.Group();
+
+    const zoneCount = floorData?.zones?.length ?? 0;
 
     const bounds = {
       minX: Number.POSITIVE_INFINITY,
@@ -159,8 +161,8 @@ export class FloorplanBuilderService {
         const primaryRoomMat = new THREE.MeshStandardMaterial({
           color: roomColor,
           side: THREE.DoubleSide,
-          transparent: true,
-          opacity: 0.9,
+          transparent: false,
+          opacity: 1,
           roughness: 0.78,
           metalness: 0
         });
@@ -217,6 +219,33 @@ export class FloorplanBuilderService {
           x: (combined.min.x + combined.max.x) / 2,
           y: (combined.min.y + combined.max.y) / 2
         };
+      }
+
+      const zoneBoundary = zone.boundary ?? combined ?? zone.zoneBoundary;
+      if (zoneBoundary) {
+        const zoneWidth = zoneBoundary.max.x - zoneBoundary.min.x;
+        const zoneDepth = zoneBoundary.max.y - zoneBoundary.min.y;
+        if (zoneWidth > 0 && zoneDepth > 0) {
+          const zoneGeo = new THREE.PlaneGeometry(zoneWidth, zoneDepth);
+          const zoneMat = new THREE.MeshStandardMaterial({
+            color: this.resolveZoneColor(zone, zoneCount, zone.areas?.length ?? 0, zone.rooms?.length ?? 0),
+            side: THREE.DoubleSide,
+            transparent: false,
+            opacity: 1,
+            roughness: 0.9,
+            metalness: 0
+          });
+          const zoneFloor = new THREE.Mesh(zoneGeo, zoneMat);
+          zoneFloor.rotation.x = -Math.PI / 2;
+          zoneFloor.position.set(zoneBoundary.min.x + zoneWidth / 2, -0.02, zoneBoundary.min.y + zoneDepth / 2);
+          zoneFloor.renderOrder = -4;
+          const zoneData = { ...zone, floor: floorData.floor };
+          zoneFloor.userData = { type: 'zone', data: zoneData };
+          this.floorMeshes.push(zoneFloor);
+          this.floorGroup!.add(zoneFloor);
+          extendBounds(zoneBoundary.min.x, zoneBoundary.min.y);
+          extendBounds(zoneBoundary.max.x, zoneBoundary.max.y);
+        }
       }
     });
 
@@ -365,6 +394,20 @@ export class FloorplanBuilderService {
     return hex;
   }
 
+  private resolveZoneColor(zone: any, totalZones: number, areaCount: number, roomCount: number): number {
+    if (zone?.color) {
+      return new THREE.Color(zone.color as any).getHex();
+    }
+
+    const tone = this.deriveSemanticLayer(zone, 'area');
+    const base = this.getBaseColorForTone(tone === 'room' ? 'core' : tone);
+    const softness = roomCount === 0 && areaCount === 0 ? 0.42 : 0.32;
+    const lighten = Math.min(0.25, 0.12 + (totalZones > 0 ? (1 / totalZones) * 0.35 : 0));
+    const softened = this.softenColor(base, softness);
+    const adjusted = this.adjustLightness(softened, lighten);
+    return adjusted.getHex();
+  }
+
   private getMutedFloorMaterial(colorInput: number | string): THREE.MeshStandardMaterial {
     const key = typeof colorInput === 'string' ? colorInput : `#${colorInput.toString(16)}`;
     const existing = this.mutedFloorMaterialCache.get(key);
@@ -372,11 +415,11 @@ export class FloorplanBuilderService {
       return existing;
     }
     const baseColor = new THREE.Color(colorInput as any);
-    const washedColor = baseColor.clone().lerp(new THREE.Color('#f8fafc'), 0.85);
+    const washedColor = baseColor.clone().lerp(new THREE.Color('#f8fafc'), 0.9);
     const material = new THREE.MeshStandardMaterial({
       color: washedColor,
       transparent: true,
-      opacity: 0.045,
+      opacity: 0.12,
       side: THREE.DoubleSide,
       roughness: 0.9,
       metalness: 0
@@ -384,6 +427,15 @@ export class FloorplanBuilderService {
     material.depthWrite = false;
     this.mutedFloorMaterialCache.set(key, material);
     return material;
+  }
+
+  public getAssignedRoomColor(roomId: string): string | null {
+    for (const [key, value] of this.roomColorAssignments.entries()) {
+      if (key.endsWith(`::${roomId}`)) {
+        return `#${value.toString(16).padStart(6, '0')}`;
+      }
+    }
+    return null;
   }
 
   private resetColorAssignments(): void {
