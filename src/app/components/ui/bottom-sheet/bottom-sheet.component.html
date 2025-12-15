@@ -26,14 +26,31 @@
 
         <ion-list lines="none" class="building-list">
           <ion-item button detail="false" *ngFor="let item of currentData.data" (click)="selectBuilding(item)">
-            <div class="list-rank" *ngIf="item.rank">{{ item.rank }}</div>
-            <div class="color-chip" [style.backgroundColor]="item.color">
+            <div class="list-rank" *ngIf="item.rank" [style.background]="item.color">{{ item.rank }}</div>
+            <div
+              class="color-chip"
+              [ngStyle]="{
+                background: accentSurface(item.color),
+                color: accentText(item.color),
+                borderColor: accentBorder(item.color)
+              }"
+            >
               <ion-icon name="business-outline"></ion-icon>
             </div>
             <ion-label>
               <div class="label-header">
                 <h4>{{ item.name }}</h4>
-                <ion-badge *ngIf="item.distanceText" mode="md" color="light" class="distance-pill">📏 {{ item.distanceText }}</ion-badge>
+                <ion-badge
+                  *ngIf="item.distanceText"
+                  mode="md"
+                  class="distance-pill"
+                  [ngStyle]="{
+                    '--background': accentSurface(item.color, 0.22),
+                    '--color': accentText(item.color)
+                  }"
+                >
+                  📏 {{ item.distanceText }}
+                </ion-badge>
               </div>
               <p>{{ item.description }}</p>
             </ion-label>
@@ -56,15 +73,43 @@
         </div>
 
         <div class="detail-meta" *ngIf="currentData.data.distanceText">
-          <ion-badge color="light">📏 ห่างจากคุณ {{ currentData.data.distanceText }}</ion-badge>
+          <ion-badge
+            class="distance-pill"
+            [ngStyle]="{
+              '--background': accentSurface(currentData.data.color, 0.22),
+              '--color': accentText(currentData.data.color)
+            }"
+          >
+            📏 ห่างจากคุณ {{ currentData.data.distanceText }}
+          </ion-badge>
         </div>
 
         <div class="action-row">
-          <ion-button expand="block" color="primary" (click)="selectBuilding(currentData.data)">
+          <ion-button
+            expand="block"
+            (click)="selectBuilding(currentData.data)"
+            [ngStyle]="{
+              '--background': currentData.data.color || '#2563eb',
+              '--background-activated': accentSurface(currentData.data.color, 0.35),
+              '--background-focused': accentSurface(currentData.data.color, 0.35),
+              '--color': '#ffffff'
+            }"
+          >
             <ion-icon name="cube-outline" slot="start"></ion-icon>
             เข้าสู่อาคาร (3D)
           </ion-button>
-          <ion-button expand="block" fill="outline" color="medium" [href]="currentData.data.mapsLink" target="_blank" rel="noopener">
+          <ion-button
+            expand="block"
+            fill="outline"
+            [href]="currentData.data.mapsLink"
+            target="_blank"
+            rel="noopener"
+            [ngStyle]="{
+              '--color': accentText(currentData.data.color),
+              '--border-color': accentBorder(currentData.data.color),
+              '--border-width': '1.5px'
+            }"
+          >
             <ion-icon name="navigate-outline" slot="start"></ion-icon>
             นำทาง
           </ion-button>

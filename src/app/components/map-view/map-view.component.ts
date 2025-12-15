@@ -1,8 +1,11 @@
 import { Component, OnInit, PLATFORM_ID, Inject, OnDestroy, AfterViewInit, inject } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { IonicModule } from '@ionic/angular';
 import { Subject, Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { BottomSheetService, SheetMode } from '../../services/bottom-sheet.service';
+import { addIcons } from 'ionicons';
+import { businessOutline, locateOutline, navigateOutline, pinOutline } from 'ionicons/icons';
 
 interface TargetLocation {
     name: string;
@@ -36,7 +39,7 @@ interface MapZone {
 @Component({
     selector: 'app-map-view',
     standalone: true,
-    imports: [CommonModule],
+    imports: [CommonModule, IonicModule],
     templateUrl: './map-view.component.html',
     styleUrls: ['./map-view.component.css']
 })
@@ -83,9 +86,13 @@ export class MapViewComponent implements OnInit, OnDestroy, AfterViewInit {
         { name: 'วิทยาลัยนวัตกรรมการผลิตขั้นสูง', latlng: [13.730062563193098, 100.77542709470409], id: 'kmitl_60th', description: 'อาคารเรียนรวม', color: '#f7a4c0' }
     ];
 
-    constructor(@Inject(PLATFORM_ID) private platformId: Object) {}
+    constructor(@Inject(PLATFORM_ID) private platformId: Object) {
+        addIcons({ businessOutline, locateOutline, navigateOutline, pinOutline });
+    }
 
     ngOnInit(): void {
+        this.targets = this.applyRankVisuals([...this.targets]);
+
         this.searchSubscription = this.searchSubject
             .pipe(debounceTime(300), distinctUntilChanged())
             .subscribe(query => this.performSearch(query));
@@ -259,7 +266,7 @@ export class MapViewComponent implements OnInit, OnDestroy, AfterViewInit {
         }).addTo(this.map);
 
         this.targets.forEach(target => {
-            const icon = this.createRankedPinIcon(target.color, 0);
+            const icon = this.createRankedPinIcon(target.color, target.rank ?? 0);
             const marker = this.L.marker(target.latlng, { icon }).addTo(this.map);
             marker.on('click', () => this.onLocationSelect(target));
             target.mapMarker = marker;
@@ -319,15 +326,16 @@ export class MapViewComponent implements OnInit, OnDestroy, AfterViewInit {
             target.distanceText = distanceText;
         });
 
-        this.targets = [...this.targets]
-            .sort((a, b) => (a.distance ?? Number.MAX_SAFE_INTEGER) - (b.distance ?? Number.MAX_SAFE_INTEGER))
-            .map((target, index) => {
-                target.rank = index + 1;
-                if (target.mapMarker) {
-                    target.mapMarker.setIcon(this.createRankedPinIcon(target.color, target.rank));
-                }
-                return target;
-            });
+        const sortedTargets = [...this.targets]
+            .sort((a, b) => (a.distance ?? Number.MAX_SAFE_INTEGER) - (b.distance ?? Number.MAX_SAFE_INTEGER));
+
+        this.targets = this.applyRankVisuals(sortedTargets);
+
+        this.targets.forEach(target => {
+            if (target.mapMarker) {
+                target.mapMarker.setIcon(this.createRankedPinIcon(target.color, target.rank ?? 0));
+            }
+        });
 
         this.updateBottomSheetList();
     }
@@ -335,6 +343,9 @@ export class MapViewComponent implements OnInit, OnDestroy, AfterViewInit {
     private updateBottomSheetList(force = false): void {
         if (!force && this.currentSheetMode === 'location-detail') {
             return;
+        }
+        if (force) {
+            this.targets = this.applyRankVisuals([...this.targets]);
         }
         const listPayload = this.targets.map(target => ({
             ...target,
@@ -384,5 +395,24 @@ export class MapViewComponent implements OnInit, OnDestroy, AfterViewInit {
 
     private buildMapsLink(lat: number, lng: number): string {
         return `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+    }
+
+    private applyRankVisuals(targets: TargetLocation[]): TargetLocation[] {
+        const total = targets.length || 1;
+        return targets.map((target, index) => {
+            const rank = index + 1;
+            target.rank = rank;
+            target.color = this.getRankedColor(rank, total);
+            return target;
+        });
+    }
+
+    private getRankedColor(rank: number, total: number): string {
+        if (total <= 1) {
+            return 'hsl(120, 85%, 45%)';
+        }
+        const ratio = (rank - 1) / (total - 1);
+        const hue = 120 - (ratio * 120);
+        return `hsl(${hue}, 88%, 48%)`;
     }
 }

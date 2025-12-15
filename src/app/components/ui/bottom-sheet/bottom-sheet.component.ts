@@ -124,4 +124,54 @@ export class BottomSheetComponent implements OnInit {
   backToList() {
     this.bottomSheetService.close();
   }
+
+  accentSurface(color?: string, alpha = 0.18): string {
+    return this.withAlpha(color, alpha, 0.18);
+  }
+
+  accentBorder(color?: string, alpha = 0.45): string {
+    return this.withAlpha(color, alpha, 0.45);
+  }
+
+  accentText(color?: string): string {
+    if (!color) {
+      return '#2563eb';
+    }
+    return color.startsWith('hsla') ? color.replace(/hsla\(([^,]+),([^,]+),([^,]+),[^)]+\)/, 'hsl($1,$2,$3)') : color;
+  }
+
+  private withAlpha(color: string | undefined, explicitAlpha?: number, fallbackAlpha?: number): string {
+    const alpha = explicitAlpha ?? fallbackAlpha ?? 0.2;
+    if (!color) {
+      return `rgba(148, 163, 184, ${alpha})`;
+    }
+
+    if (color.startsWith('hsla')) {
+      return color;
+    }
+
+    if (color.startsWith('hsl')) {
+      return color.replace('hsl', 'hsla').replace(')', `, ${alpha})`);
+    }
+
+    if (color.startsWith('#')) {
+      const { r, g, b } = this.hexToRgb(color);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    return color;
+  }
+
+  private hexToRgb(hex: string): { r: number; g: number; b: number } {
+    const sanitized = hex.replace('#', '');
+    const value = sanitized.length === 3
+      ? sanitized.split('').map(char => char + char).join('')
+      : sanitized.padEnd(6, '0');
+    const numeric = parseInt(value, 16);
+    return {
+      r: (numeric >> 16) & 255,
+      g: (numeric >> 8) & 255,
+      b: numeric & 255
+    };
+  }
 }
