@@ -226,7 +226,7 @@ export class BuildingViewComponent implements AfterViewInit, OnChanges, OnDestro
       const overlayMaterial = new THREE.MeshStandardMaterial({
         color,
         transparent: true,
-        opacity: 0.35,
+        opacity: 0.55,
         depthWrite: false
       });
       const floorBoxGeo = new THREE.BoxGeometry(clickBoxWidth, floorHeight, coreDepth + 1);
@@ -274,7 +274,7 @@ export class BuildingViewComponent implements AfterViewInit, OnChanges, OnDestro
     this.floorOverlays.forEach((mesh, index) => {
       const material = mesh.material as THREE.MeshStandardMaterial;
       const isActive = this.activeFloor === index + 1;
-      material.opacity = isActive ? 0.75 : 0.35;
+      material.opacity = isActive ? 0.85 : 0.55;
       material.emissive = new THREE.Color(isActive ? '#ffffff' : '#000000');
       material.emissiveIntensity = isActive ? 0.2 : 0.0;
     });

@@ -8,6 +8,8 @@ interface Boundary {
   max: { x: number; y: number };
 }
 
+type SemanticTone = 'core' | 'circulation' | 'room' | 'vertical' | 'service';
+
 @Injectable({
   providedIn: 'root'
 })
@@ -15,18 +17,13 @@ export class FloorplanBuilderService {
   // Constants
   private readonly wallHeight = 3;
   private readonly wallThickness = 0.2;
-  private readonly zoneColorPalette: number[] = [
-    0x8ab4f8, // soft blue
-    0xf7b7d4, // pastel pink
-    0xf6d365, // mellow gold
-    0xb4d9ff, // baby blue
-    0xd0bdf4, // lavender
-    0xffcba4, // light coral
-    0xffe4a3, // peach
-    0xc4e0f9, // icy blue
-    0xe6d5ff, // lilac
-    0xfddde6  // rose quartz
-  ];
+  private readonly coreColor = new THREE.Color('#4c6ef5');
+  private readonly circulationColor = new THREE.Color('#38bdf8');
+  private readonly verticalColor = new THREE.Color('#a855f7');
+  private readonly serviceColor = new THREE.Color('#f0abfc');
+  private readonly roomGradientStart = new THREE.Color('#3b82f6');
+  private readonly roomGradientMid = new THREE.Color('#a855f7');
+  private readonly roomGradientEnd = new THREE.Color('#f97316');
 
   // Materials
   private wallMaterial!: THREE.MeshStandardMaterial;
@@ -34,9 +31,8 @@ export class FloorplanBuilderService {
   private lockedDoorMaterial!: THREE.MeshStandardMaterial;
   private unlockedDoorMaterial!: THREE.MeshStandardMaterial;
   private mutedFloorMaterialCache = new Map<string, THREE.MeshStandardMaterial>();
-
-  private zoneColorAssignments = new Map<string, number>();
-  private paletteIndex = 0;
+  private areaColorAssignments = new Map<string, number>();
+  private roomColorAssignments = new Map<string, number>();
 
   // Mesh Collections
   private wallMeshes: THREE.Mesh[] = [];
@@ -91,6 +87,7 @@ export class FloorplanBuilderService {
    */
   public buildFloor(floorData: any): THREE.Group {
     this.clearFloor(); // ล้างของเก่าก่อน (ถ้ามี)
+    this.resetColorAssignments();
     this.floorGroup = new THREE.Group();
 
     const bounds = {
@@ -120,26 +117,30 @@ export class FloorplanBuilderService {
       });
     }
 
+    const roomGradientExtent = this.computeRoomExtent(floorData);
+
     floorData?.zones?.forEach((zone: any) => {
+      const areaCount = zone.areas?.length ?? 0;
+      const roomCount = zone.rooms?.length ?? 0;
       const zoneBoundaries: Boundary[] = [];
 
-      zone.areas?.forEach((area: any) => {
+      zone.areas?.forEach((area: any, areaIndex: number) => {
         const areaWidth = area.boundary.max.x - area.boundary.min.x;
         const areaDepth = area.boundary.max.y - area.boundary.min.y;
         const areaGeo = new THREE.PlaneGeometry(areaWidth, areaDepth);
-        const areaColor = this.pickZoneColor(area.id || area.name || `area-${this.paletteIndex}`);
+        const areaColor = this.resolveAreaColor(zone.id, area, areaIndex, areaCount);
         const areaMat = new THREE.MeshStandardMaterial({
           color: areaColor,
           side: THREE.DoubleSide,
           transparent: true,
           opacity: 0.82,
-          roughness: 0.85,
+          roughness: 0.88,
           metalness: 0
         });
         const areaFloor = new THREE.Mesh(areaGeo, areaMat);
         areaFloor.rotation.x = -Math.PI / 2;
         areaFloor.position.set(area.boundary.min.x + areaWidth / 2, 0.01, area.boundary.min.y + areaDepth / 2);
-        const areaData = { ...area, floor: floorData.floor };
+        const areaData = { ...area, floor: floorData.floor, chromaticRole: this.deriveSemanticLayer(area, 'area') };
         areaFloor.userData = { type: 'area', data: areaData };
         this.floorMeshes.push(areaFloor);
         this.floorGroup!.add(areaFloor);
@@ -150,23 +151,27 @@ export class FloorplanBuilderService {
         }
       });
 
-      zone.rooms?.forEach((room: any) => {
+      zone.rooms?.forEach((room: any, roomIndex: number) => {
         const roomWidth = room.boundary.max.x - room.boundary.min.x;
         const roomDepth = room.boundary.max.y - room.boundary.min.y;
         const roomGeo = new THREE.PlaneGeometry(roomWidth, roomDepth);
-        const roomColor = this.pickZoneColor(room.id || room.name || `room-${this.paletteIndex}`);
-        const roomMat = new THREE.MeshStandardMaterial({
+        const roomColor = this.resolveRoomColor(zone.id, room, roomIndex, roomCount, roomGradientExtent);
+        const primaryRoomMat = new THREE.MeshStandardMaterial({
           color: roomColor,
           side: THREE.DoubleSide,
           transparent: true,
-          opacity: 0.88,
-          roughness: 0.8,
+          opacity: 0.9,
+          roughness: 0.78,
           metalness: 0
         });
-        const roomFloor = new THREE.Mesh(roomGeo, roomMat);
+        const roomFloor = new THREE.Mesh(roomGeo, primaryRoomMat);
         roomFloor.rotation.x = -Math.PI / 2;
         roomFloor.position.set(room.boundary.min.x + roomWidth / 2, 0.02, room.boundary.min.y + roomDepth / 2);
-        const roomData = { ...room, floor: floorData.floor };
+        const roomData = {
+          ...room,
+          floor: floorData.floor,
+          chromaticRole: this.deriveSemanticLayer(room, 'room')
+        };
         roomFloor.userData = { type: 'room', data: roomData };
         this.floorMeshes.push(roomFloor);
         this.floorGroup!.add(roomFloor);
@@ -216,14 +221,15 @@ export class FloorplanBuilderService {
     });
 
     if (Number.isFinite(bounds.minX) && Number.isFinite(bounds.maxX) && Number.isFinite(bounds.minY) && Number.isFinite(bounds.maxY)) {
-      const baseWidth = bounds.maxX - bounds.minX;
-      const baseDepth = bounds.maxY - bounds.minY;
+      const padding = 12;
+      const baseWidth = bounds.maxX - bounds.minX + padding * 2;
+      const baseDepth = bounds.maxY - bounds.minY + padding * 2;
       if (baseWidth > 0 && baseDepth > 0) {
         const baseGeo = new THREE.PlaneGeometry(baseWidth, baseDepth);
         const mutedMaterial = this.getMutedFloorMaterial(floorData?.color ?? 0xdfe6f3);
         const baseMesh = new THREE.Mesh(baseGeo, mutedMaterial);
         baseMesh.rotation.x = -Math.PI / 2;
-        baseMesh.position.set(bounds.minX + baseWidth / 2, 0, bounds.minY + baseDepth / 2);
+        baseMesh.position.set(bounds.minX + (bounds.maxX - bounds.minX) / 2, -0.04, bounds.minY + (bounds.maxY - bounds.minY) / 2);
         baseMesh.renderOrder = -5;
         this.floorMeshes.push(baseMesh);
         this.floorGroup!.add(baseMesh);
@@ -249,6 +255,7 @@ export class FloorplanBuilderService {
     this.objectMeshes = [];
     this.floorMeshes = [];
     this.doorMeshes = [];
+    this.resetColorAssignments();
   }
 
   /**
@@ -308,15 +315,54 @@ export class FloorplanBuilderService {
     }));
   }
 
-  private pickZoneColor(key: string): number {
-    const existing = this.zoneColorAssignments.get(key);
-    if (existing !== undefined) {
-      return existing;
+  private resolveAreaColor(zoneId: string | undefined, area: any, index: number, total: number): number {
+    const key = `${zoneId ?? 'zone'}::area::${area.id ?? index}`;
+    const cached = this.areaColorAssignments.get(key);
+    if (cached !== undefined) {
+      return cached;
     }
-    const color = this.zoneColorPalette[this.paletteIndex % this.zoneColorPalette.length];
-    this.zoneColorAssignments.set(key, color);
-    this.paletteIndex += 1;
-    return color;
+
+    const tone = this.deriveSemanticLayer(area, 'area');
+    const base = this.getBaseColorForTone(tone);
+    let tinted = this.applyIndexTint(base, index, total, tone === 'circulation' ? 0.22 : 0.12);
+    if (tone === 'circulation') {
+      tinted = this.softenColor(tinted, 0.35);
+      tinted = this.adjustLightness(tinted, 0.04);
+    } else if (tone === 'core') {
+      tinted = this.softenColor(tinted, 0.18);
+    } else if (tone === 'service') {
+      tinted = this.adjustLightness(tinted, 0.02);
+    }
+    const hex = tinted.getHex();
+    this.areaColorAssignments.set(key, hex);
+    return hex;
+  }
+
+  private resolveRoomColor(zoneId: string | undefined, room: any, index: number, total: number, extent: { minX: number; maxX: number } | null): number {
+    const key = `${zoneId ?? 'zone'}::room::${room.id ?? index}`;
+    const cached = this.roomColorAssignments.get(key);
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    const tone = this.deriveSemanticLayer(room, 'room');
+    let baseColor: THREE.Color;
+
+    if (tone === 'service') {
+      baseColor = this.serviceColor.clone();
+    } else if (tone === 'vertical') {
+      baseColor = this.verticalColor.clone();
+    } else if (tone === 'core') {
+      baseColor = this.coreColor.clone();
+    } else {
+      const factor = this.computeRoomGradientFactor(room, extent, index, total);
+      baseColor = this.sampleRoomGradient(factor);
+    }
+
+    const refined = this.adjustLightness(baseColor, tone === 'room' ? 0.015 : 0);
+    const hex = refined.getHex();
+    this.roomColorAssignments.set(key, hex);
+    return hex;
   }
 
   private getMutedFloorMaterial(colorInput: number | string): THREE.MeshStandardMaterial {
@@ -326,11 +372,11 @@ export class FloorplanBuilderService {
       return existing;
     }
     const baseColor = new THREE.Color(colorInput as any);
-    const washedColor = baseColor.clone().lerp(new THREE.Color(0xffffff), 0.75);
+    const washedColor = baseColor.clone().lerp(new THREE.Color('#f8fafc'), 0.85);
     const material = new THREE.MeshStandardMaterial({
       color: washedColor,
       transparent: true,
-      opacity: 0.05,
+      opacity: 0.045,
       side: THREE.DoubleSide,
       roughness: 0.9,
       metalness: 0
@@ -338,5 +384,117 @@ export class FloorplanBuilderService {
     material.depthWrite = false;
     this.mutedFloorMaterialCache.set(key, material);
     return material;
+  }
+
+  private resetColorAssignments(): void {
+    this.areaColorAssignments.clear();
+    this.roomColorAssignments.clear();
+  }
+
+  private deriveSemanticLayer(entity: any, fallback: 'room' | 'area'): SemanticTone {
+    const descriptor = `${entity?.type ?? ''} ${entity?.name ?? ''} ${entity?.id ?? ''}`.toLowerCase();
+
+    if (/(lift|elevator|stairs|shaft|escalator|hoist)/.test(descriptor)) {
+      return 'vertical';
+    }
+    if (/(restroom|toilet|washroom|bath|mechanical|electrical|service|storage|utility)/.test(descriptor)) {
+      return 'service';
+    }
+    if (/(lobby|atrium|foyer|plaza|commons|hub|core)/.test(descriptor)) {
+      return 'core';
+    }
+    if (/(hallway|corridor|walkway|passage|aisle|concourse)/.test(descriptor)) {
+      return 'circulation';
+    }
+
+    if (fallback === 'area') {
+      return 'circulation';
+    }
+
+    return 'room';
+  }
+
+  private getBaseColorForTone(tone: SemanticTone): THREE.Color {
+    switch (tone) {
+      case 'core':
+        return this.coreColor.clone();
+      case 'circulation':
+        return this.circulationColor.clone();
+      case 'vertical':
+        return this.verticalColor.clone();
+      case 'service':
+        return this.serviceColor.clone();
+      default:
+        return this.roomGradientStart.clone();
+    }
+  }
+
+  private applyIndexTint(base: THREE.Color, index: number, total: number, span: number): THREE.Color {
+    if (!Number.isFinite(index) || !Number.isFinite(total) || total <= 1) {
+      return base.clone();
+    }
+    const normalized = index / (total - 1);
+    const delta = (normalized - 0.5) * span * 2;
+    return this.adjustLightness(base.clone(), delta);
+  }
+
+  private computeRoomExtent(floorData: any): { minX: number; maxX: number } | null {
+    let minX = Number.POSITIVE_INFINITY;
+    let maxX = Number.NEGATIVE_INFINITY;
+
+    floorData?.zones?.forEach((zone: any) => {
+      zone.rooms?.forEach((room: any) => {
+        minX = Math.min(minX, room.boundary?.min?.x ?? Number.POSITIVE_INFINITY);
+        maxX = Math.max(maxX, room.boundary?.max?.x ?? Number.NEGATIVE_INFINITY);
+      });
+    });
+
+    if (!Number.isFinite(minX) || !Number.isFinite(maxX) || minX === maxX) {
+      return null;
+    }
+
+    return { minX, maxX };
+  }
+
+  private computeRoomGradientFactor(room: any, extent: { minX: number; maxX: number } | null, fallbackIndex: number, total: number): number {
+    if (extent) {
+      const centerX = ((room.boundary?.min?.x ?? 0) + (room.boundary?.max?.x ?? 0)) / 2;
+      if (Number.isFinite(centerX)) {
+        const range = extent.maxX - extent.minX;
+        if (range > 0) {
+          const factor = (centerX - extent.minX) / range;
+          return Math.min(1, Math.max(0, factor));
+        }
+      }
+    }
+
+    if (!Number.isFinite(total) || total <= 1) {
+      return 0;
+    }
+    return Math.min(1, Math.max(0, fallbackIndex / (total - 1)));
+  }
+
+  private sampleRoomGradient(factor: number): THREE.Color {
+    const clamped = Math.min(1, Math.max(0, factor));
+    if (clamped <= 0.5) {
+      const phase = clamped / 0.5;
+      return this.roomGradientStart.clone().lerp(this.roomGradientMid, phase);
+    }
+    const phase = (clamped - 0.5) / 0.5;
+    return this.roomGradientMid.clone().lerp(this.roomGradientEnd, phase);
+  }
+
+  private softenColor(color: THREE.Color, factor: number): THREE.Color {
+    const clamped = Math.min(1, Math.max(0, factor));
+    const neutral = new THREE.Color('#e2e8f0');
+    return color.clone().lerp(neutral, clamped);
+  }
+
+  private adjustLightness(color: THREE.Color, delta: number): THREE.Color {
+    const hsl = { h: 0, s: 0, l: 0 };
+    color.getHSL(hsl);
+    const nextL = Math.min(0.92, Math.max(0.12, hsl.l + delta));
+    color.setHSL(hsl.h, hsl.s, nextL);
+    return color;
   }
 }
