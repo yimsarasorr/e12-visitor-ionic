@@ -7,9 +7,8 @@
   </div>
 
   <div class="list-content">
-    <ng-container *ngIf="accessibleAssets$ | async as assets">
-
-      <div *ngIf="assets.length === 0" class="empty-state">
+    <ng-container *ngIf="accessibleRooms$ | async as rooms">
+      <div *ngIf="rooms.length === 0" class="empty-state">
         <div class="empty-icon">
           <ion-icon name="lock-closed-outline"></ion-icon>
         </div>
@@ -17,23 +16,27 @@
         <p>เลือก User (Visitor/Staff) ด้านบนเพื่อดูสิทธิ์</p>
       </div>
 
-      <div *ngFor="let asset of assets" class="access-item">
+      <div *ngFor="let room of rooms" class="access-item" (click)="focusRoom(room)">
         <div class="item-status-col">
-          <span class="status-badge unlocked">
-            <ion-icon name="checkmark-circle"></ion-icon> เปิด
-          </span>
+          <ion-badge class="color-dot" [style.background]="room.color"></ion-badge>
         </div>
 
         <div class="item-info-col">
-          <h4 class="item-name">{{ asset.name }}</h4>
+          <h4 class="item-name">{{ room.name }}</h4>
           <div class="item-meta">
             <ion-icon name="location-outline"></ion-icon>
-            <span>ชั้น {{ asset.floor_number }} • {{ asset.type }}</span>
+            <span>ชั้น {{ room.floor }} • {{ room.zoneName || 'โซนหลัก' }}</span>
+          </div>
+          <div class="door-statuses" *ngIf="room.doors.length">
+            <span *ngFor="let door of room.doors" [class.unlocked]="door.allowed" [class.locked]="!door.allowed">
+              <ion-icon [name]="door.allowed ? 'checkmark-circle' : 'close-circle'"></ion-icon>
+              {{ door.label }}
+            </span>
           </div>
         </div>
 
         <div class="item-action-col">
-           <ion-icon name="chevron-forward-outline" style="color: #ccc;"></ion-icon>
+          <ion-icon name="chevron-forward-outline"></ion-icon>
         </div>
       </div>
 
