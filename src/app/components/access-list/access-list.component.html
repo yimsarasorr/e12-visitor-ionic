@@ -1,8 +1,8 @@
 <div class="access-list-container">
   <div class="access-list-header">
     <h3 class="header-title">พื้นที่ที่เข้าถึงได้</h3>
-    <span class="header-badge" *ngIf="accessibleAssets$ | async as assets">
-      {{ assets.length }} รายการ
+    <span class="header-badge" *ngIf="accessibleRooms$ | async as rooms">
+      {{ rooms.length }} รายการ
     </span>
   </div>
 
