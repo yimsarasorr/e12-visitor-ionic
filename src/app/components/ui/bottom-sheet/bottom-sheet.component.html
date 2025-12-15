@@ -26,11 +26,15 @@
 
         <ion-list lines="none" class="building-list">
           <ion-item button detail="false" *ngFor="let item of currentData.data" (click)="selectBuilding(item)">
-            <div class="avatar">
+            <div class="list-rank" *ngIf="item.rank">{{ item.rank }}</div>
+            <div class="color-chip" [style.backgroundColor]="item.color">
               <ion-icon name="business-outline"></ion-icon>
             </div>
             <ion-label>
-              <h4>{{ item.name }}</h4>
+              <div class="label-header">
+                <h4>{{ item.name }}</h4>
+                <ion-badge *ngIf="item.distanceText" mode="md" color="light" class="distance-pill">📏 {{ item.distanceText }}</ion-badge>
+              </div>
               <p>{{ item.description }}</p>
             </ion-label>
             <ion-icon slot="end" name="chevron-forward-outline" class="chevron"></ion-icon>
@@ -51,12 +55,16 @@
           </ion-button>
         </div>
 
+        <div class="detail-meta" *ngIf="currentData.data.distanceText">
+          <ion-badge color="light">📏 ห่างจากคุณ {{ currentData.data.distanceText }}</ion-badge>
+        </div>
+
         <div class="action-row">
           <ion-button expand="block" color="primary" (click)="selectBuilding(currentData.data)">
             <ion-icon name="cube-outline" slot="start"></ion-icon>
             เข้าสู่อาคาร (3D)
           </ion-button>
-          <ion-button expand="block" fill="outline" color="medium">
+          <ion-button expand="block" fill="outline" color="medium" [href]="currentData.data.mapsLink" target="_blank" rel="noopener">
             <ion-icon name="navigate-outline" slot="start"></ion-icon>
             นำทาง
           </ion-button>

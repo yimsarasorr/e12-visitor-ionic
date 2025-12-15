@@ -1,9 +1,79 @@
 <div class="map-container">
   <div id="map"></div>
-  
+
+  <div class="top-overlay">
+    <div class="search-wrapper">
+      <div class="search-bar">
+        <span class="search-icon">🔍</span>
+        <input
+          #searchInput
+          class="search-input"
+          type="text"
+          placeholder="ค้นหาสถานที่..."
+          [value]="currentSearchQuery"
+          (input)="onSearchInput(searchInput.value)"
+          (focus)="showSuggestions = true"
+        />
+        <span
+          class="clear-icon"
+          *ngIf="currentSearchQuery"
+          (click)="clearSearch()"
+        >✕</span>
+      </div>
+
+      <div
+        class="search-suggestions"
+        *ngIf="showSuggestions && (searchResults.length > 0 || isSearching)"
+      >
+        <div class="suggestion-item loading" *ngIf="isSearching">
+          <span class="spinner-small"></span>
+          กำลังค้นหา...
+        </div>
+        <div
+          class="suggestion-item"
+          *ngFor="let result of searchResults"
+          (click)="selectSearchResult(result)"
+        >
+          <span class="suggestion-icon">{{ result.isLocal ? '🏛️' : '📍' }}</span>
+          <div class="suggestion-text">
+            <span class="suggestion-name">{{ result.name }}</span>
+            <span class="suggestion-address">{{ result.address }}</span>
+          </div>
+        </div>
+      </div>
+
+      <p class="search-error" *ngIf="searchError">⚠️ {{ searchError }}</p>
+      <p class="search-status" *ngIf="!isSearching && searchResults.length === 0 && currentSearchQuery">
+        ไม่พบผลลัพธ์ ลองค้นคำอื่นดูนะ
+      </p>
+    </div>
+
+    <div class="zone-selector-wrapper">
+      <label for="zoneSelect">เลือกพื้นที่:</label>
+      <select
+        id="zoneSelect"
+        class="zone-select"
+        (change)="focusOnSelectedZone(zoneSelect.value)"
+        #zoneSelect
+      >
+        <option *ngFor="let zone of zones" [value]="zone.hash">
+          {{ zone.name }}
+        </option>
+      </select>
+    </div>
+
+    <div class="user-status" *ngIf="userGeoHash">
+      📍 {{ userLat?.toFixed(4) }}, {{ userLng?.toFixed(4) }} ({{ userGeoHash }})
+    </div>
+  </div>
+
   <div class="fab-container">
     <button class="location-fab" (click)="focusOnUser()" title="ตำแหน่งปัจจุบัน">
-      <i class="pi pi-map-marker"></i>
+      🎯
     </button>
+  </div>
+
+  <div class="error-toast" *ngIf="errorMessage">
+    {{ errorMessage }}
   </div>
 </div>

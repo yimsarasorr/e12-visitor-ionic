@@ -72,7 +72,7 @@ export class ExplorePage implements OnInit, AfterViewInit, OnDestroy {
   ];
 
   constructor() {
-    addIcons({ arrowBack }); // Register Icon สำหรับปุ่ม Back
+    addIcons({ arrowBack });
     this.buildingData = this.prepareBuildingData(this.buildingDataService.getFallback());
   }
 
