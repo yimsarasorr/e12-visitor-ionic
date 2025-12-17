@@ -1,9 +1,21 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Observable, map, startWith } from 'rxjs';
-import { IonBadge, IonIcon } from '@ionic/angular/standalone';
+import { 
+  IonList, 
+  IonItem, 
+  IonLabel, 
+  IonIcon, 
+  IonBadge, 
+  IonNote,
+  IonListHeader
+} from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import { lockClosedOutline, locationOutline, checkmarkCircle, closeCircle } from 'ionicons/icons';
+
 import { FloorplanInteractionService } from '../../services/floorplan/floorplan-interaction.service';
 import { FloorplanBuilderService } from '../../services/floorplan/floorplan-builder.service';
+import { BottomSheetService } from '../../services/bottom-sheet.service';
 
 interface DoorStatus {
   id: string;
@@ -25,15 +37,28 @@ interface RoomAccessSummary {
 @Component({
   selector: 'app-access-list',
   standalone: true,
-  imports: [CommonModule, IonIcon, IonBadge],
+  imports: [
+    CommonModule,
+    IonList,
+    IonItem,
+    IonLabel,
+    IonIcon,
+    IonBadge,
+    IonNote
+],
   templateUrl: './access-list.component.html',
   styleUrls: ['./access-list.component.css']
 })
 export class AccessListComponent implements OnInit {
   private interactionService = inject(FloorplanInteractionService);
   private builder = inject(FloorplanBuilderService);
+  private bottomSheetService = inject(BottomSheetService);
 
   public accessibleRooms$!: Observable<RoomAccessSummary[]>;
+
+  constructor() {
+    addIcons({ lockClosedOutline, locationOutline, checkmarkCircle, closeCircle });
+  }
 
   ngOnInit(): void {
     this.accessibleRooms$ = this.interactionService.permissionList$.pipe(
@@ -44,6 +69,8 @@ export class AccessListComponent implements OnInit {
 
   focusRoom(room: RoomAccessSummary): void {
     this.interactionService.focusOnAsset(room.id);
+    
+    this.bottomSheetService.setExpansionState('peek');
   }
 
   private buildRoomSummaries(allowList: string[]): RoomAccessSummary[] {
@@ -63,6 +90,7 @@ export class AccessListComponent implements OnInit {
         }));
 
         const anyAllowed = allowedSet.has(room.id) || doorStatuses.some(d => d.allowed);
+        
         const badgeColor = this.builder.getAssignedRoomColor(room.id) ?? room.color ?? '#94a3b8';
 
         rooms.push({
@@ -90,7 +118,7 @@ export class AccessListComponent implements OnInit {
     const r = (base >> 16) & 255;
     const g = (base >> 8) & 255;
     const b = base & 255;
-    const mix = (component: number) => Math.round(component + (209 - component) * 0.45); // 209 = 0xd1
+    const mix = (component: number) => Math.round(component + (230 - component) * 0.6); 
     return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
   }
 }
