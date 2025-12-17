@@ -52,18 +52,18 @@ export class ThreeSceneService {
     this.scene.add(directionalLight);
     
     // Ground Plane (ย้ายมาจาก createScene เดิม)
-    const groundGeometry = new THREE.PlaneGeometry(100, 100);
-    const groundMaterial = new THREE.MeshStandardMaterial({
-      color: 0xeeeeee,
-      side: THREE.DoubleSide,
-    });
+    // const groundGeometry = new THREE.PlaneGeometry(100, 100);
+    // const groundMaterial = new THREE.MeshStandardMaterial({
+    //   color: 0xeeeeee,
+    //   side: THREE.DoubleSide,
+    // });
     
-    // แก้ไขตรงนี้: ลบ const แล้ว assign ให้กับ property ของ class
-    this.coloredGroundPlane = new THREE.Mesh(groundGeometry, groundMaterial);
-    this.coloredGroundPlane.rotation.x = -Math.PI / 2;
-    this.coloredGroundPlane.position.y = -0.01;
-    this.coloredGroundPlane.renderOrder = -1;
-    this.scene.add(this.coloredGroundPlane); // เพิ่ม this.
+    // // แก้ไขตรงนี้: ลบ const แล้ว assign ให้กับ property ของ class
+    // this.coloredGroundPlane = new THREE.Mesh(groundGeometry, groundMaterial);
+    // this.coloredGroundPlane.rotation.x = -Math.PI / 2;
+    // this.coloredGroundPlane.position.y = -0.01;
+    // this.coloredGroundPlane.renderOrder = -1;
+    // this.scene.add(this.coloredGroundPlane); // เพิ่ม this.
 
     // this.resize(); // ตั้งค่าขนาดเริ่มต้น
   }

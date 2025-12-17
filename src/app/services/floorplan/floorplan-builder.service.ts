@@ -1,8 +1,6 @@
-// src/app/services/floorplan/floorplan-builder.service.ts
 import { Injectable } from '@angular/core';
 import * as THREE from 'three';
 
-// Interface นี้ย้ายมาจาก component
 interface Boundary {
   min: { x: number; y: number };
   max: { x: number; y: number };
@@ -47,7 +45,7 @@ export class FloorplanBuilderService {
   }
 
   /**
-   * สร้าง Materials ที่จะใช้ซ้ำๆ
+   * Materials ซ้ำๆ
    */
   private initializeMaterials(): void {
     this.wallMaterial = new THREE.MeshStandardMaterial({
@@ -134,8 +132,8 @@ export class FloorplanBuilderService {
         const areaMat = new THREE.MeshStandardMaterial({
           color: areaColor,
           side: THREE.DoubleSide,
-          transparent: true,
-          opacity: 0.82,
+          transparent: false,
+          opacity: 1,
           roughness: 0.88,
           metalness: 0
         });
@@ -222,31 +220,42 @@ export class FloorplanBuilderService {
       }
 
       const zoneBoundary = zone.boundary ?? combined ?? zone.zoneBoundary;
-      if (zoneBoundary) {
-        const zoneWidth = zoneBoundary.max.x - zoneBoundary.min.x;
-        const zoneDepth = zoneBoundary.max.y - zoneBoundary.min.y;
-        if (zoneWidth > 0 && zoneDepth > 0) {
-          const zoneGeo = new THREE.PlaneGeometry(zoneWidth, zoneDepth);
-          const zoneMat = new THREE.MeshStandardMaterial({
-            color: this.resolveZoneColor(zone, zoneCount, zone.areas?.length ?? 0, zone.rooms?.length ?? 0),
-            side: THREE.DoubleSide,
-            transparent: false,
-            opacity: 1,
-            roughness: 0.9,
-            metalness: 0
-          });
-          const zoneFloor = new THREE.Mesh(zoneGeo, zoneMat);
-          zoneFloor.rotation.x = -Math.PI / 2;
-          zoneFloor.position.set(zoneBoundary.min.x + zoneWidth / 2, -0.02, zoneBoundary.min.y + zoneDepth / 2);
-          zoneFloor.renderOrder = -4;
-          const zoneData = { ...zone, floor: floorData.floor };
-          zoneFloor.userData = { type: 'zone', data: zoneData };
-          this.floorMeshes.push(zoneFloor);
-          this.floorGroup!.add(zoneFloor);
-          extendBounds(zoneBoundary.min.x, zoneBoundary.min.y);
-          extendBounds(zoneBoundary.max.x, zoneBoundary.max.y);
-        }
-      }
+      // if (zoneBoundary) {
+      //   const zoneWidth = zoneBoundary.max.x - zoneBoundary.min.x;
+      //   const zoneDepth = zoneBoundary.max.y - zoneBoundary.min.y;
+      //   if (zoneWidth > 0 && zoneDepth > 0) {
+      //     const zoneGeo = new THREE.PlaneGeometry(zoneWidth, zoneDepth);
+      //     const originalZoneColor = this.resolveZoneColor(zone, zoneCount, zone.areas?.length ?? 0, zone.rooms?.length ?? 0);
+      //     const zoneColorObj = new THREE.Color(originalZoneColor);
+
+      //     // 2. ปรับให้จืด (Desaturate) และสว่าง (Lighten)
+      //     const zHsl = { h: 0, s: 0, l: 0 };
+      //     zoneColorObj.getHSL(zHsl);
+      //     // ปรับ Saturation คูณ 0.2 (เหลือความสด 20%)
+      //     // ปรับ Lightness เป็น 0.9 (ให้ขาวๆ สว่างๆ)
+      //     zoneColorObj.setHSL(zHsl.h, zHsl.s * 0.2, 0.9);
+
+      //     // 3. เอาสีที่จืดแล้วไปสร้าง Material
+      //     const zoneMat = new THREE.MeshStandardMaterial({
+      //       color: zoneColorObj, // ใช้สีใหม่ที่ปรับแล้ว
+      //       side: THREE.DoubleSide,
+      //       transparent: false, // Solid ทึบ
+      //       opacity: 1,
+      //       roughness: 1,       // ด้านสนิท
+      //       metalness: 0
+      //     });
+      //     const zoneFloor = new THREE.Mesh(zoneGeo, zoneMat);
+      //     zoneFloor.rotation.x = -Math.PI / 2;
+      //     zoneFloor.position.set(zoneBoundary.min.x + zoneWidth / 2, -0.02, zoneBoundary.min.y + zoneDepth / 2);
+      //     zoneFloor.renderOrder = -4;
+      //     const zoneData = { ...zone, floor: floorData.floor };
+      //     zoneFloor.userData = { type: 'zone', data: zoneData };
+      //     this.floorMeshes.push(zoneFloor);
+      //     this.floorGroup!.add(zoneFloor);
+      //     extendBounds(zoneBoundary.min.x, zoneBoundary.min.y);
+      //     extendBounds(zoneBoundary.max.x, zoneBoundary.max.y);
+      //   }
+      // }
     });
 
     if (Number.isFinite(bounds.minX) && Number.isFinite(bounds.maxX) && Number.isFinite(bounds.minY) && Number.isFinite(bounds.maxY)) {
@@ -414,17 +423,24 @@ export class FloorplanBuilderService {
     if (existing) {
       return existing;
     }
+
     const baseColor = new THREE.Color(colorInput as any);
-    const washedColor = baseColor.clone().lerp(new THREE.Color('#f8fafc'), 0.9);
+    
+    const hsl = { h: 0, s: 0, l: 0 };
+    baseColor.getHSL(hsl);
+
+    baseColor.setHSL(hsl.h, hsl.s * 1.0, 0.5); 
+
     const material = new THREE.MeshStandardMaterial({
-      color: washedColor,
+      color: baseColor,   
       transparent: true,
-      opacity: 0.12,
+      opacity: 0.6,
       side: THREE.DoubleSide,
-      roughness: 0.9,
-      metalness: 0
+      roughness: 1,
+      metalness: 0,
+      depthWrite: true
     });
-    material.depthWrite = false;
+    
     this.mutedFloorMaterialCache.set(key, material);
     return material;
   }

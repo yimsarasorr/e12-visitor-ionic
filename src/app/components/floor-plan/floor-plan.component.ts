@@ -149,7 +149,7 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
     }
     if (!this.isInitialized) return;
     if (changes['floorData'] && this.floorData) {
-      this.threeScene.setGroundPlaneColor(this.floorData.color ?? 0xeeeeee);
+      this.threeScene.setGroundPlaneColor(this.floorData.color ?? 0xf5f5f5);
       this.reloadFloorPlan();
       this.interaction.initialize(this.floorData);
     }
