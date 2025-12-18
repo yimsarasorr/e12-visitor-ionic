@@ -31,7 +31,7 @@
   align-items: center;
   gap: 14px;
   pointer-events: none;
-  z-index: 40;
+  z-index: 1100;
 }
 
 .search-wrapper {
@@ -66,7 +66,7 @@
   left: 0;
   width: 100%;
   pointer-events: auto;
-  z-index: 30;
+  z-index: 1110;
 }
 
 .search-suggestions ion-list {
@@ -165,7 +165,7 @@ ion-chip.user-status ion-icon {
 }
 
 ion-fab.fab-container {
-  z-index: 50;
+  z-index: 1200;
   --offset-bottom: calc(120px + env(safe-area-inset-bottom));
   --offset-end: 18px;
 }
@@ -195,5 +195,5 @@ ion-fab.fab-container ion-fab-button::part(native):active {
   border-radius: 16px;
   box-shadow: 0 4px 12px rgba(229, 115, 115, 0.25);
   font-size: 0.9rem;
-  z-index: 45;
+  z-index: 1300;
 }
