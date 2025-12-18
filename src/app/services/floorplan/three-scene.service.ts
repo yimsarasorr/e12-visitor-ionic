@@ -30,7 +30,7 @@ export class ThreeSceneService {
     this.scene.background = new THREE.Color(0xEBF0F5);
 
     this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 1000);
-    this.camera.position.set(-20, 18, -25);
+    this.camera.position.set(20, 18, 25);
 
     this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true });
     this.renderer.setPixelRatio(window.devicePixelRatio);

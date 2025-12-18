@@ -191,6 +191,30 @@ export class FloorplanBuilderService {
           this.floorGroup!.add(mesh);
           extendBounds(door.center.x, door.center.y);
         });
+
+        if (room.name) {
+          // หาจุดกึ่งกลางห้อง (ถ้ามี room.center ก็ใช้เลย ถ้าไม่มีให้คำนวณจาก boundary)
+          let centerX = room.center?.x;
+          let centerZ = room.center?.y; // ระวัง: ใน 2D y คือ z ใน 3D
+          
+          if (centerX === undefined || centerZ === undefined) {
+             centerX = (room.boundary.min.x + room.boundary.max.x) / 2;
+             centerZ = (room.boundary.min.y + room.boundary.max.y) / 2;
+          }
+
+          const labelMesh = this.createRoomLabel(room.name);
+          
+          // วางตำแหน่ง: X, Z ตามห้อง, Y ยกขึ้นนิดนึง (0.2) ไม่ให้จมพื้น
+          labelMesh.position.set(centerX, 0.2, centerZ);
+          
+          // หมุนให้นอนราบไปกับพื้น
+          labelMesh.rotation.x = -Math.PI / 2;
+          
+          // (Optional) ถ้าตึกหมุนอยู่แล้ว อาจจะต้องหมุนป้ายตามแกน Z ให้ตัวหนังสือหันถูกทิศ
+          // labelMesh.rotation.z = Math.PI; // ลองปรับดูถ้าตัวหนังสือกลับหัว
+
+          this.floorGroup!.add(labelMesh);
+        }
       });
 
       zone.objects?.forEach((obj: any) => {
@@ -564,5 +588,42 @@ export class FloorplanBuilderService {
     const nextL = Math.min(0.92, Math.max(0.12, hsl.l + delta));
     color.setHSL(hsl.h, hsl.s, nextL);
     return color;
+  }
+
+  private createRoomLabel(text: string): THREE.Mesh {
+    // ใช้ Canvas ใหญ่ขึ้นเพื่อให้ Font คมชัด
+    const width = 512;
+    const height = 128;
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d')!;
+
+    // พื้นหลังใส
+    ctx.fillStyle = 'rgba(0,0,0,0)'; 
+    ctx.clearRect(0, 0, width, height);
+
+    // Font ใหญ่
+    ctx.font = 'bold 80px "Kanit", "Inter", sans-serif'; 
+    ctx.fillStyle = '#334155'; // สีเทาเข้ม
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, width / 2, height / 2);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter; 
+    
+    const material = new THREE.MeshBasicMaterial({
+      map: texture,
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthWrite: false, // ป้ายบนพื้นปิด depthWrite เพื่อความเนียน
+    });
+
+    // ขนาดป้ายบนโลก 3D (5 x 1.25 เมตร)
+    const geometry = new THREE.PlaneGeometry(5, 1.25); 
+    const mesh = new THREE.Mesh(geometry, material);
+
+    return mesh;
   }
 }

@@ -453,7 +453,7 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
   }
 
   private getIsoCameraOffset(): THREE.Vector3 {
-    const baseOffset = new THREE.Vector3(-5.5, 5.2, -5.5);
+    const baseOffset = new THREE.Vector3(5.5, 5.2, 5.5);
     return baseOffset.multiplyScalar(this.CAMERA_DISTANCE_FACTOR);
   }
 
