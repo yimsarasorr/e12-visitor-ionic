@@ -15,7 +15,7 @@ export class FloorplanBuilderService {
   // Constants
   private readonly wallHeight = 3;
   private readonly wallThickness = 0.2;
-  private readonly coreColor = new THREE.Color('#4c6ef5');
+  private readonly coreColor = new THREE.Color('#3333FF');
   private readonly circulationColor = new THREE.Color('#38bdf8');
   private readonly verticalColor = new THREE.Color('#a855f7');
   private readonly serviceColor = new THREE.Color('#f0abfc');
@@ -592,8 +592,8 @@ export class FloorplanBuilderService {
 
   private createRoomLabel(text: string): THREE.Mesh {
     // ใช้ Canvas ใหญ่ขึ้นเพื่อให้ Font คมชัด
-    const width = 512;
-    const height = 128;
+    const width = 2560;
+    const height = 512;
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
@@ -604,8 +604,8 @@ export class FloorplanBuilderService {
     ctx.clearRect(0, 0, width, height);
 
     // Font ใหญ่
-    ctx.font = 'bold 80px "Kanit", "Inter", sans-serif'; 
-    ctx.fillStyle = '#334155'; // สีเทาเข้ม
+    ctx.font = 'bold 480px "Kanit", "Inter", sans-serif'; 
+    ctx.fillStyle = '#ffffffff'; // สีเทาเข้ม
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(text, width / 2, height / 2);
@@ -621,7 +621,7 @@ export class FloorplanBuilderService {
     });
 
     // ขนาดป้ายบนโลก 3D (5 x 1.25 เมตร)
-    const geometry = new THREE.PlaneGeometry(5, 1.25); 
+    const geometry = new THREE.PlaneGeometry(7.5, 1.5); 
     const mesh = new THREE.Mesh(geometry, material);
 
     return mesh;
