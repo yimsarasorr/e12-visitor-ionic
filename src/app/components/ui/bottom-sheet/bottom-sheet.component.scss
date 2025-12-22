@@ -45,6 +45,12 @@
   height: var(--peek-height);
 }
 
+/* [เพิ่มใหม่] State: Partial (ประมาณ 30% ของจอ) */
+.sheet-container.state-partial {
+  height: 30vh;
+  transition: height 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
 .sheet-container.state-default {
   height: var(--default-height);
 }

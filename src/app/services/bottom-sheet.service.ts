@@ -3,7 +3,8 @@ import { BehaviorSubject, Subject } from 'rxjs';
 
 // กำหนดประเภทเนื้อหาที่จะโชว์
 export type SheetMode = 'building-list' | 'access-list' | 'building-detail' | 'hidden' | 'location-detail' | 'room-detail';
-export type ExpansionState = 'peek' | 'default' | 'expanded';
+// [แก้ไข] เพิ่ม 'partial'
+export type ExpansionState = 'peek' | 'partial' | 'default' | 'expanded';
 
 // โครงสร้างข้อมูลที่จะส่งมา
 export interface SheetData {
@@ -71,7 +72,8 @@ export class BottomSheetService {
 
   /** Helper: เปิดหน้ารายละเอียดห้อง (สำหรับ Floor Plan) */
   showRoomDetail(roomData: any) {
-    this.open('room-detail', roomData, roomData?.name || 'รายละเอียดห้อง', 'default');
+    // [แก้ไข] ใช้ 'partial' แทน 'default'
+    this.open('room-detail', roomData, roomData.name || 'รายละเอียดห้อง', 'partial');
   }
 
   /** Helper: กลับไปหน้า Access List */

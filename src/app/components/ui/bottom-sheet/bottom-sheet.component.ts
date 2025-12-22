@@ -98,14 +98,20 @@ export class BottomSheetComponent implements OnInit {
     this.renderer.setStyle(el, 'transition', 'height 0.4s cubic-bezier(0.25, 1, 0.5, 1)');
     this.renderer.removeStyle(el, 'height');
 
-    const ratio = el.offsetHeight / window.innerHeight;
-    if (ratio > 0.65) {
-      this.setState('expanded', true);
-    } else if (ratio > 0.35) {
-      this.setState('default', true);
-    } else {
-      this.setState('peek', true);
-    }
+    // [แก้ไข] เลือก State ที่ใกล้ที่สุดจาก snap points (รวม partial)
+    const currentHeight = el.offsetHeight;
+    const snaps: { state: ExpansionState; height: number }[] = [
+      { state: 'peek', height: this.getSnapPoint('peek') },
+      { state: 'partial', height: this.getSnapPoint('partial') },
+      { state: 'default', height: this.getSnapPoint('default') },
+      { state: 'expanded', height: this.getSnapPoint('expanded') }
+    ];
+    const nearest = snaps.reduce((best, s) => {
+      const d = Math.abs(currentHeight - s.height);
+      return d < best.dist ? { dist: d, state: s.state } : best;
+    }, { dist: Number.POSITIVE_INFINITY, state: 'peek' as ExpansionState });
+
+    this.setState(nearest.state, true);
   }
 
   private getClientY(event: TouchEvent | MouseEvent): number {
@@ -187,5 +193,16 @@ export class BottomSheetComponent implements OnInit {
       g: (numeric >> 8) & 255,
       b: numeric & 255
     };
+  }
+
+  // [เพิ่ม] คำนวณความสูง snap ต่อ state (peek/partial/default/expanded)
+  private getSnapPoint(state: ExpansionState): number {
+    switch (state) {
+      case 'peek': return 80; // ให้สอดคล้องกับ CSS
+      case 'partial': return Math.round(window.innerHeight * 0.3);
+      case 'default': return Math.round(window.innerHeight * 0.5);
+      case 'expanded': return Math.round(window.innerHeight);
+      default: return 80;
+    }
   }
 }
