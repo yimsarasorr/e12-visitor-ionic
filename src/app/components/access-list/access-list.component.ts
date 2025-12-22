@@ -11,7 +11,7 @@ import {
   IonListHeader
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { lockClosedOutline, locationOutline, checkmarkCircle, closeCircle } from 'ionicons/icons';
+import { lockClosedOutline, locationOutline, checkmarkCircle, closeCircle, chevronForwardOutline } from 'ionicons/icons';
 
 import { FloorplanInteractionService } from '../../services/floorplan/floorplan-interaction.service';
 import { FloorplanBuilderService } from '../../services/floorplan/floorplan-builder.service';
@@ -58,7 +58,7 @@ export class AccessListComponent implements OnInit {
   public accessibleRooms$!: Observable<RoomAccessSummary[]>;
 
   constructor() {
-    addIcons({ lockClosedOutline, locationOutline, checkmarkCircle, closeCircle });
+    addIcons({lockClosedOutline,chevronForwardOutline,locationOutline,checkmarkCircle,closeCircle});
   }
 
   ngOnInit(): void {
@@ -133,6 +133,22 @@ export class AccessListComponent implements OnInit {
     const b = base & 255;
     const mix = (component: number) => Math.round(component + (230 - component) * 0.6); 
     return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
+  }
+
+  // [เพิ่ม] ฟังก์ชันคำนวณสีตัวอักษร (ขาว/ดำ) ตามความสว่างของพื้นหลัง
+  getContrastColor(hexColor: string): string {
+    if (!hexColor) return '#000000';
+    const sanitized = hexColor.startsWith('#') ? hexColor : `#${hexColor}`;
+    const normalized = sanitized.length === 4
+      ? `#${sanitized[1]}${sanitized[1]}${sanitized[2]}${sanitized[2]}${sanitized[3]}${sanitized[3]}`
+      : sanitized.padEnd(7, '0');
+
+    const r = parseInt(normalized.substring(1, 3), 16);
+    const g = parseInt(normalized.substring(3, 5), 16);
+    const b = parseInt(normalized.substring(5, 7), 16);
+
+    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+    return (yiq >= 128) ? '#1f2937' : '#ffffff';
   }
 }
 

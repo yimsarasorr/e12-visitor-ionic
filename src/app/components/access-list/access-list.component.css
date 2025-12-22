@@ -2,97 +2,115 @@
   padding-bottom: 24px;
 }
 
+/* Header Styles (เหมือนเดิม) */
 .header-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 4px;
 }
-
 .header-row h3 {
   margin: 0;
   font-size: 1.1rem;
   font-weight: 600;
   color: var(--ion-color-dark);
 }
-
 .header-subtitle {
   font-size: 0.85rem;
   color: var(--ion-color-medium);
 }
 
-.badge-container {
+/* [ใหม่] ปรับสไตล์รายการแบบกำหนดเองให้กับ Ion List */
+.custom-room-list {
+  background: transparent;
+  padding: 0 8px;
+}
+
+.room-item-wrapper {
+  --padding-start: 0;
+  --inner-padding-end: 0;
+  --background: transparent;
+  margin-bottom: 12px;
+}
+
+/* [สำคัญ] กล่องสี่เหลี่ยมด้านซ้าย (แทนจุดวงกลมเดิม) */
+.room-box-square {
+  width: 72px;   /* ปรับได้ เช่น 60/72/80 */
+  height: 72px;  /* ให้เป็นจัตุรัส */
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 12px;
-}
-
-.color-dot {
-  display: block;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background-color: #ccc;
-  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
+  text-align: center;
+  padding: 4px;
+  margin-right: 16px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
   flex-shrink: 0;
 }
 
-.room-name {
-  font-weight: 600;
+/* ชื่อห้องภายในกล่อง */
+.room-box-square span {
+  font-weight: 700;
   font-size: 1rem;
-  color: var(--ion-color-dark);
-  margin-bottom: 4px;
+  line-height: 1.2;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* แสดงไม่เกิน 2 บรรทัด */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.room-meta {
+/* ส่วนรายละเอียดด้านขวา */
+.room-details {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+}
+
+.meta-info {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.85rem;
-  color: var(--ion-color-medium);
+  gap: 8px;
 }
 
 .meta-pill {
-  background: var(--ion-color-light);
-  color: var(--ion-color-dark);
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 500;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
 }
 
-.meta-dot {
-  color: var(--ion-color-light-shade);
+.meta-text {
+  font-size: 0.9rem;
+  color: var(--ion-color-medium);
 }
 
+/* Door Tags */
 .door-tags {
   display: flex;
-  gap: 4px;
-  margin-top: 6px;
   flex-wrap: wrap;
+  gap: 6px;
 }
 
 .door-tag {
-  font-size: 0.7rem;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: var(--ion-color-light);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
   color: var(--ion-color-medium);
-  border: 1px solid transparent;
 }
 
-.door-tag.is-allowed {
-  background: rgba(var(--ion-color-success-rgb), 0.1);
+.door-tag.allowed {
   color: var(--ion-color-success);
-  border-color: rgba(var(--ion-color-success-rgb), 0.2);
 }
 
-/* Empty State */
+/* Empty State Styles (เหมือนเดิม) */
 .empty-state {
   margin-top: 32px;
 }
-
 .empty-icon-circle {
   width: 64px;
   height: 64px;
@@ -102,9 +120,6 @@
   align-items: center;
   justify-content: center;
   margin: 0 auto 16px;
-}
-
-.empty-icon-circle ion-icon {
   font-size: 32px;
   color: var(--ion-color-medium);
 }

@@ -1,5 +1,4 @@
 <div class="access-list-container">
-  
   <div class="list-header ion-padding-horizontal ion-padding-top ion-padding-bottom">
     <div class="header-row">
       <h3>พื้นที่ที่เข้าถึงได้</h3>
@@ -12,7 +11,6 @@
 
   <div class="list-content">
     <ng-container *ngIf="accessibleRooms$ | async as rooms">
-      
       <div *ngIf="rooms.length === 0" class="empty-state ion-text-center ion-padding">
         <div class="empty-icon-circle">
           <ion-icon name="lock-closed-outline"></ion-icon>
@@ -21,33 +19,43 @@
         <p class="ion-text-muted">กรุณาเลือก User หรือตรวจสอบสิทธิ์การเข้าถึง</p>
       </div>
 
-      <ion-list lines="full" *ngIf="rooms.length > 0">
-        <ion-item *ngFor="let room of rooms" 
-                  button 
-                  detail="true" 
-                  (click)="focusRoom(room)"
-                  class="room-item">
-          
-          <div slot="start" class="badge-container">
-            <div class="color-dot" [style.background]="room.color"></div>
+      <ion-list lines="none" *ngIf="rooms.length > 0" class="custom-room-list">
+        <ion-item
+          *ngFor="let room of rooms"
+          button
+          detail="false"
+          (click)="focusRoom(room)"
+          class="room-item-wrapper"
+        >
+          <div
+            slot="start"
+            class="room-box-square"
+            [style.background]="room.color"
+          >
+            <span [style.color]="getContrastColor(room.color)">
+              {{ room.name }}
+            </span>
           </div>
 
-          <ion-label>
-            <h2 class="room-name">{{ room.name }}</h2>
-            <div class="room-meta">
+          <ion-label class="room-details">
+            <div class="meta-info">
               <span class="meta-pill">ชั้น {{ room.floor }}</span>
-              <span class="meta-dot">•</span>
               <span class="meta-text">{{ room.zoneName || 'โซนทั่วไป' }}</span>
             </div>
-            
+
             <div class="door-tags" *ngIf="room.doors.length > 0">
-              <span *ngFor="let door of room.doors" 
-                    class="door-tag" 
-                    [class.is-allowed]="door.allowed">
+              <span
+                *ngFor="let door of room.doors"
+                class="door-tag"
+                [class.allowed]="door.allowed"
+              >
+                <ion-icon [name]="door.allowed ? 'checkmark-circle' : 'close-circle'"></ion-icon>
                 {{ door.label }}
               </span>
             </div>
           </ion-label>
+
+          <ion-icon slot="end" name="chevron-forward-outline" color="medium" style="font-size: 16px;"></ion-icon>
         </ion-item>
       </ion-list>
     </ng-container>
