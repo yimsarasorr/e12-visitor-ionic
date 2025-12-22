@@ -50,9 +50,10 @@ interface RoomAccessSummary {
   styleUrls: ['./access-list.component.css']
 })
 export class AccessListComponent implements OnInit {
-  private interactionService = inject(FloorplanInteractionService);
+  // เปลี่ยนชื่อ instance ให้สอดคล้องกับการใช้งานใหม่
+  private interaction = inject(FloorplanInteractionService);
   private builder = inject(FloorplanBuilderService);
-  private bottomSheetService = inject(BottomSheetService);
+  private bottomSheet = inject(BottomSheetService);
 
   public accessibleRooms$!: Observable<RoomAccessSummary[]>;
 
@@ -61,20 +62,32 @@ export class AccessListComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.accessibleRooms$ = this.interactionService.permissionList$.pipe(
+    this.accessibleRooms$ = this.interaction.permissionList$.pipe(
       startWith([]),
       map(assetIds => this.buildRoomSummaries(assetIds))
     );
   }
 
-  focusRoom(room: RoomAccessSummary): void {
-    this.interactionService.focusOnAsset(room.id);
-    
-    this.bottomSheetService.setExpansionState('peek');
+  // [ลบ] focusRoom (เดิม) และแทนที่ด้วย selectRoom
+  selectRoom(room: RoomAccessSummary) {
+    // 1) โฟกัสไปที่ห้องใน 3D โดยไม่เปิด Modal
+    this.interaction.focusOnAsset(room.id, false);
+
+    // 2) เปิด Bottom Sheet: Room Detail
+    this.bottomSheet.showRoomDetail(room);
+  }
+
+  // [เพิ่ม] ฟังก์ชันสำหรับกดเลือกห้อง (เรียกจาก HTML)
+  focusRoom(room: RoomAccessSummary) {
+    console.log('Selecting room:', room.id); // เช็ค log
+    // 1. โฟกัสห้องใน 3D โดยไม่เปิด Modal
+    this.interaction.focusOnAsset(room.id, false);
+    // 2. เปิด Bottom Sheet: Room Detail
+    this.bottomSheet.showRoomDetail(room);
   }
 
   private buildRoomSummaries(allowList: string[]): RoomAccessSummary[] {
-    const floorData = this.interactionService.getCurrentFloorData();
+    const floorData = this.interaction.getCurrentFloorData();
     if (!floorData?.zones) {
       return [];
     }
@@ -122,3 +135,5 @@ export class AccessListComponent implements OnInit {
     return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
   }
 }
+
+// หมายเหตุ: อย่าลืมเพิ่ม (click)="selectRoom(room)" ที่ <ion-item> ใน access-list.component.html

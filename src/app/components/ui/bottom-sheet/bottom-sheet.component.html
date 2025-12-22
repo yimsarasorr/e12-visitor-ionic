@@ -117,9 +117,36 @@
       </div>
     }
 
-    @if (currentData.mode === 'access-list') {
-      <app-access-list></app-access-list>
-    }
+    <app-access-list *ngIf="currentData.mode === 'access-list'"></app-access-list>
+
+    <div class="room-detail-container" *ngIf="currentData.mode === 'room-detail'">
+      <div class="detail-header ion-padding-horizontal ion-padding-top">
+        <div class="header-row">
+          <ion-button fill="clear" size="small" (click)="onBackFromDetail()">
+            <ion-icon slot="icon-only" name="arrow-back"></ion-icon>
+          </ion-button>
+          <h3>{{ currentData.data?.name || 'รายละเอียดห้อง' }}</h3>
+        </div>
+      </div>
+
+      <div class="ion-padding">
+        <ion-card class="detail-card">
+          <ion-card-content>
+            <div class="status-badge" [style.background]="accentSurface(currentData.data?.color)">
+              <span [style.color]="accentText(currentData.data?.color)">
+                {{ currentData.data?.zoneName || 'โซนทั่วไป' }}
+              </span>
+            </div>
+
+            <p class="description ion-margin-top">
+              ข้อมูลห้อง: {{ currentData.data?.id }}<br>
+              ชั้น: {{ currentData.data?.floor }}
+            </p>
+
+          </ion-card-content>
+        </ion-card>
+      </div>
+    </div>
 
   </div>
 </div>

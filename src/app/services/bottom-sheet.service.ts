@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Subject } from 'rxjs';
 
 // กำหนดประเภทเนื้อหาที่จะโชว์
-export type SheetMode = 'building-list' | 'access-list' | 'building-detail' | 'hidden' | 'location-detail';
+export type SheetMode = 'building-list' | 'access-list' | 'building-detail' | 'hidden' | 'location-detail' | 'room-detail';
 export type ExpansionState = 'peek' | 'default' | 'expanded';
 
 // โครงสร้างข้อมูลที่จะส่งมา
@@ -67,6 +67,16 @@ export class BottomSheetService {
   /** Helper: เปิดหน้ารายละเอียดสถานที่ (สำหรับ Map) */
   showLocationDetail(locationData: any) {
     this.open('location-detail', locationData, undefined, 'peek');
+  }
+
+  /** Helper: เปิดหน้ารายละเอียดห้อง (สำหรับ Floor Plan) */
+  showRoomDetail(roomData: any) {
+    this.open('room-detail', roomData, roomData?.name || 'รายละเอียดห้อง', 'default');
+  }
+
+  /** Helper: กลับไปหน้า Access List */
+  goBackToAccessList(previousData: any) {
+    this.open('access-list', previousData, 'พื้นที่ที่เข้าถึงได้', 'default');
   }
 
   /** ฟังก์ชันส่ง Action (เช่น กดปุ่ม Enter Building) */

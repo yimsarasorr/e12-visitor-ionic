@@ -66,13 +66,31 @@ export class FloorplanInteractionService {
     }
   }
 
-  public focusOnAsset(assetId: string): void {
+  // [ปรับแก้] เพิ่ม Parameter 'showModal' (Default = true คือเปิด Modal ปกติ)
+  public focusOnAsset(assetId: string, showModal: boolean = true): void {
     if (!this.floorData?.zones) return;
     const match = this.findAssetById(assetId);
     if (!match) return;
+
+    // 1. จำค่า Object ที่เลือก (เพื่อให้ FloorPlanComponent รู้ว่าต้องล็อกกล้อง)
     this.selectedObject$.next({ type: match.type, data: match.data });
-    this.isDetailDialogVisible$.next(true);
+
+    // 2. เปิด/ปิด Modal ตามพารามิเตอร์
+    if (showModal) {
+      this.isDetailDialogVisible$.next(true);
+    } else {
+      this.isDetailDialogVisible$.next(false);
+    }
+
+    // 3. สั่งให้กล้องแพนไปหา
     this.focusRequestSubject.next(match);
+  }
+
+  // [เพิ่ม] ฟังก์ชันสำหรับปุ่ม "Back" ใน Bottom Sheet
+  public clearFocus(): void {
+    // เคลียร์ค่า เพื่อให้กล้องกลับไปเกาะที่ Player
+    this.selectedObject$.next(null);
+    this.isDetailDialogVisible$.next(false);
   }
 
   /**

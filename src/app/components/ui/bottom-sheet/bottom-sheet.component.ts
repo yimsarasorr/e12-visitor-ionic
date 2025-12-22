@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
 import { BottomSheetService, SheetData, ExpansionState } from '../../../services/bottom-sheet.service';
 import { AccessListComponent } from '../../access-list/access-list.component';
+import { FloorplanInteractionService } from '../../../services/floorplan/floorplan-interaction.service';
 
 // 1. Import addIcons และชื่อ Icon ที่ใช้
 import { addIcons } from 'ionicons';
@@ -12,7 +13,8 @@ import {
   close, 
   cubeOutline, 
   navigateOutline, 
-  chevronForwardOutline 
+  chevronForwardOutline, 
+  arrowBack // เพิ่ม icon ย้อนกลับ
 } from 'ionicons/icons';
 
 @Component({
@@ -25,6 +27,7 @@ import {
 export class BottomSheetComponent implements OnInit {
   public bottomSheetService = inject(BottomSheetService);
   private renderer = inject(Renderer2);
+  private interactionService = inject(FloorplanInteractionService); // inject เพื่อเรียก clearFocus
 
   @ViewChild('sheet') sheetRef!: ElementRef;
 
@@ -43,7 +46,8 @@ export class BottomSheetComponent implements OnInit {
       close, 
       cubeOutline, 
       navigateOutline, 
-      chevronForwardOutline 
+      chevronForwardOutline, 
+      arrowBack // register icon ใหม่
     });
   }
 
@@ -123,6 +127,16 @@ export class BottomSheetComponent implements OnInit {
 
   backToList() {
     this.bottomSheetService.close();
+  }
+
+  // ฟังก์ชันกดปุ่มย้อนกลับจากหน้า Room Detail
+  onBackFromDetail() {
+    // 1. เคลียร์ Focus กล้อง 3D (ให้กลับไปหาผู้เล่น)
+    this.interactionService.clearFocus();
+
+    // 2. สั่ง Bottom Sheet ย้อนกลับไปหน้า Access List (ส่งข้อมูลเดิมกลับไปแบบง่ายๆ)
+    const previousData = []; // สามารถดึงจาก floorData/permission ปัจจุบันมาแทนได้ภายหลัง
+    this.bottomSheetService.goBackToAccessList(previousData);
   }
 
   accentSurface(color?: string, alpha = 0.18): string {

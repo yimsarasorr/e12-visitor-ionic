@@ -313,9 +313,12 @@ export class FloorPlanComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   private updateCameraPosition(): void {
     if (!this.playerControls.player) return;
-    if (!this.interaction.isDetailDialogVisible$.value) {
+
+    // [แก้ตรงนี้] ใช้ selectedObject$.value เพื่อตัดสินใจล็อกกล้อง
+    if (!this.interaction.selectedObject$.value) {
       this.cameraLookAtTarget.copy(this.playerControls.player.position);
     }
+
     const cameraLookAt = this.cameraLookAtTarget;
     const targetCameraPos = new THREE.Vector3();
     if (this.currentView === 'iso') {
