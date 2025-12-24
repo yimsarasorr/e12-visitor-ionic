@@ -1,158 +1,84 @@
-<ion-header [translucent]="true" class="ion-no-border">
-  <ion-toolbar color="primary">
+<ion-header class="ion-no-border">
+  <ion-toolbar mode="ios">
     <ion-buttons slot="start">
-      <ion-menu-button></ion-menu-button>
+      <ion-button color="primary" routerLink="/tabs/home">
+        <ion-icon slot="icon-only" name="chevron-back-outline"></ion-icon>
+      </ion-button>
     </ion-buttons>
-    <ion-title>สร้างคำเชิญ (Create Invite)</ion-title>
+
+    <ion-title>การนัดหมาย</ion-title>
+
+    <ion-buttons slot="end">
+      <ion-button color="primary" (click)="showSearch = !showSearch">
+        <ion-icon slot="icon-only" name="search-outline"></ion-icon>
+      </ion-button>
+      <ion-button color="primary" (click)="openCreateModal()">
+        <ion-icon slot="icon-only" name="add-outline" class="add-icon-large"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
+
+  <ion-toolbar *ngIf="showSearch">
+    <ion-searchbar placeholder="ค้นหาชื่อ Visitor..." mode="ios"></ion-searchbar>
+  </ion-toolbar>
+
+  <div class="calendar-strip-container">
+    <div class="calendar-scroll">
+      <div *ngFor="let day of calendarDates" 
+           class="date-item" 
+           [class.selected]="day.fullDate === selectedDate"
+           [class.is-today]="day.isToday"
+           (click)="selectDate(day.fullDate)">
+        
+        <span class="day-name">{{ day.dayName }}</span>
+        <div class="day-number-circle">
+          {{ day.dayNumber }}
+        </div>
+        <div class="dot" *ngIf="day.isToday && day.fullDate !== selectedDate"></div>
+      </div>
+    </div>
+  </div>
 </ion-header>
 
-<ion-content [fullscreen]="true" class="bg-light">
+<ion-content class="bg-light">
   
-  <div class="booking-container ion-padding-top">
+  <div class="booking-list ion-padding-top">
     
-    <div class="section-header">
-      <ion-icon name="person-add-outline"></ion-icon>
-      <ion-label>ข้อมูลผู้มาติดต่อ (Visitor)</ion-label>
-    </div>
-
-    <ion-card class="form-card">
-      <ion-card-content>
-        <ion-grid>
-          <ion-row>
-            <ion-col size="6">
-              <ion-item fill="outline" mode="md" class="input-item">
-                <ion-label position="floating">ชื่อจริง</ion-label>
-                <ion-input [(ngModel)]="bookingForm.visitor.firstName"></ion-input>
-              </ion-item>
-            </ion-col>
-            <ion-col size="6">
-              <ion-item fill="outline" mode="md" class="input-item">
-                <ion-label position="floating">นามสกุล</ion-label>
-                <ion-input [(ngModel)]="bookingForm.visitor.lastName"></ion-input>
-              </ion-item>
-            </ion-col>
-          </ion-row>
-          
-          <ion-row>
-            <ion-col size="12">
-              <ion-item fill="outline" mode="md" class="input-item">
-                <ion-icon slot="start" name="business-outline" color="medium"></ion-icon>
-                <ion-label position="floating">หน่วยงาน / บริษัท</ion-label>
-                <ion-input [(ngModel)]="bookingForm.visitor.company"></ion-input>
-              </ion-item>
-            </ion-col>
-          </ion-row>
-
-          <ion-row>
-            <ion-col size="6">
-              <ion-item fill="outline" mode="md" class="input-item">
-                <ion-icon slot="start" name="mail-outline" color="medium"></ion-icon>
-                <ion-label position="floating">อีเมล</ion-label>
-                <ion-input type="email" [(ngModel)]="bookingForm.visitor.email"></ion-input>
-              </ion-item>
-            </ion-col>
-            <ion-col size="6">
-              <ion-item fill="outline" mode="md" class="input-item">
-                <ion-icon slot="start" name="call-outline" color="medium"></ion-icon>
-                <ion-label position="floating">เบอร์โทรศัพท์</ion-label>
-                <ion-input type="tel" [(ngModel)]="bookingForm.visitor.phone"></ion-input>
-              </ion-item>
-            </ion-col>
-          </ion-row>
-        </ion-grid>
-      </ion-card-content>
-    </ion-card>
-
-    <div class="section-header">
-      <ion-icon name="checkmark-circle-outline"></ion-icon>
-      <ion-label>กำหนดสิทธิ์เข้าถึง (Access Scope)</ion-label>
-    </div>
-
-    <ion-card class="form-card">
-      <ion-card-content>
-        <ion-list lines="none">
-          
-          <ion-item class="select-item">
-            <ion-label>เลือกอาคาร</ion-label>
-            <ion-select [(ngModel)]="bookingForm.access.buildingId" interface="popover">
-              <ion-select-option value="BLD-12">อาคาร 12 ชั้น (ตึกโหล)</ion-select-option>
-              <ion-select-option value="BLD-IT">คณะ IT</ion-select-option>
-            </ion-select>
-          </ion-item>
-
-          <ion-item class="select-item">
-            <ion-label>ประเภทบัตรผ่าน</ion-label>
-            <ion-select [(ngModel)]="bookingForm.access.passType" interface="action-sheet">
-              <ion-select-option value="1-Day Pass">1-Day Pass (รายวัน)</ion-select-option>
-              <ion-select-option value="Temporary Pass">Temporary (ชั่วคราว)</ion-select-option>
-            </ion-select>
-          </ion-item>
-
-          <ion-item class="select-item">
-            <ion-label position="stacked" class="zone-label">พื้นที่ที่อนุญาต (Zones)</ion-label>
-            <ion-select [(ngModel)]="bookingForm.access.selectedZones" multiple="true" placeholder="เลือกห้อง..." okText="ยืนยัน" cancelText="ยกเลิก">
-              <ion-select-option *ngFor="let zone of availableZones" [value]="zone.id">
-                {{ zone.name }}
-              </ion-select-option>
-            </ion-select>
-          </ion-item>
-
-        </ion-list>
-      </ion-card-content>
-    </ion-card>
-
-    <div class="section-header">
-      <ion-icon name="calendar-outline"></ion-icon>
-      <ion-label>วันและเวลาที่อนุญาต (Validity)</ion-label>
-    </div>
-
-    <ion-card class="form-card">
-      <ion-card-content>
-        <ion-grid>
-          <ion-row class="ion-align-items-center">
-            <ion-col size="12">
-              <ion-item lines="none" class="datetime-trigger">
-                <ion-label>วันที่เข้าพบ</ion-label>
-                <ion-datetime-button datetime="datetime"></ion-datetime-button>
-                <ion-modal [keepContentsMounted]="true">
-                  <ng-template>
-                    <ion-datetime id="datetime" presentation="date" [(ngModel)]="bookingForm.timing.date"></ion-datetime>
-                  </ng-template>
-                </ion-modal>
-              </ion-item>
-            </ion-col>
-          </ion-row>
-          
-          <ion-row>
-            <ion-col size="6">
-              <ion-item fill="solid" class="time-item">
-                <ion-label position="stacked">เวลาเริ่ม</ion-label>
-                <ion-input type="time" [(ngModel)]="bookingForm.timing.startTime"></ion-input>
-              </ion-item>
-            </ion-col>
-            <ion-col size="6">
-              <ion-item fill="solid" class="time-item">
-                <ion-label position="stacked">สิ้นสุด</ion-label>
-                <ion-input type="time" [(ngModel)]="bookingForm.timing.endTime"></ion-input>
-              </ion-item>
-            </ion-col>
-          </ion-row>
-        </ion-grid>
-        
-        <div class="info-box">
-          <ion-icon name="information-circle-outline"></ion-icon>
-          <ion-label>ระบบจะส่งลิงก์ลงทะเบียนไปยังอีเมลของผู้มาติดต่อ</ion-label>
-        </div>
-      </ion-card-content>
-    </ion-card>
-
-    <div class="ion-padding">
-      <ion-button expand="block" size="large" shape="round" (click)="generateInvite()">
-        <ion-icon slot="start" name="paper-plane-outline"></ion-icon>
-        สร้างและส่งคำเชิญ
+    <div *ngIf="filteredBookings.length === 0" class="empty-state">
+      <div class="empty-icon">
+        <ion-icon name="calendar-outline"></ion-icon>
+      </div>
+      <p>ไม่มีรายการนัดหมายในวันนี้</p>
+      <ion-button fill="outline" size="small" (click)="openCreateModal()">
+        สร้างนัดหมายใหม่
       </ion-button>
     </div>
 
+    <ion-card *ngFor="let item of filteredBookings" class="booking-card">
+      <div class="status-strip" [class]="item.status"></div>
+      
+      <ion-item lines="none" detail="false">
+        <ion-avatar slot="start">
+          <img [src]="item.avatar" alt="Visitor Avatar" />
+        </ion-avatar>
+        <ion-label>
+          <div class="card-header">
+            <h2>{{ item.visitorName }}</h2>
+            <ion-badge [color]="getStatusColor(item.status)" mode="ios">
+              {{ getStatusLabel(item.status) }}
+            </ion-badge>
+          </div>
+          <p class="company">{{ item.company }}</p>
+          
+          <div class="time-info">
+            <ion-icon name="time-outline"></ion-icon>
+            <span>{{ item.time }}</span>
+          </div>
+        </ion-label>
+      </ion-item>
+    </ion-card>
+
   </div>
+
+  <div class="extra-space"></div>
 </ion-content>

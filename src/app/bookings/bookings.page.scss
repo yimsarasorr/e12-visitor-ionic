@@ -1,76 +1,182 @@
+/* พื้นหลัง */
 .bg-light {
-  --background: #f4f6fb;
+  --background: #f2f2f7; /* iOS Gray Background */
 }
 
-.booking-container {
-  max-width: 600px;
-  margin: 0 auto;
-  padding-bottom: 40px;
+/* --- Calendar Strip --- */
+.calendar-strip-container {
+  background: white;
+  border-bottom: 1px solid #e5e5ea;
+  padding-bottom: 8px;
 }
 
-.section-header {
+.calendar-scroll {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 16px 16px 8px;
-  color: var(--ion-color-dark);
-  font-weight: 600;
-  font-size: 1rem;
-
-  ion-icon {
-    color: var(--ion-color-primary);
-    font-size: 1.2rem;
+  overflow-x: auto;
+  padding: 0 16px;
+  gap: 12px;
+  /* ซ่อน Scrollbar */
+  scrollbar-width: none; 
+  &::-webkit-scrollbar { 
+    display: none; 
+    width: 0;     /* เพิ่มเพื่อความเข้ากันได้กับ webkit */
+    height: 0;    /* เพิ่มเพื่อความเข้ากันได้กับ webkit */
   }
 }
 
-.form-card {
-  margin: 0 16px 8px;
-  border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
-  background: white;
-  overflow: visible;
-}
-
-.input-item {
-  --border-radius: 8px;
-  --highlight-color-focused: var(--ion-color-primary);
-  font-size: 0.95rem;
-  margin-bottom: 8px;
-}
-
-.select-item {
-  --padding-start: 0;
-  --inner-padding-end: 0;
-  margin-bottom: 12px;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.zone-label {
-  margin-bottom: 8px !important;
-  color: var(--ion-color-medium);
-}
-
-.time-item {
-  --background: #f8fafc;
-  --border-radius: 8px;
-  font-size: 0.9rem;
-}
-
-.datetime-trigger {
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  margin-bottom: 12px;
-  --background: #fff;
-}
-
-.info-box {
+.date-item {
   display: flex;
-  gap: 8px;
-  background: #eff6ff;
-  color: #1e40af;
-  padding: 10px 12px;
-  border-radius: 8px;
-  font-size: 0.8rem;
-  margin-top: 12px;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  padding: 8px 0;
+  cursor: pointer;
+  
+  .day-name {
+    font-size: 0.75rem;
+    color: #8e8e93; /* iOS Gray */
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+
+  .day-number-circle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #000;
+    transition: all 0.2s;
+  }
+
+  .dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--ion-color-primary);
+    margin-top: 4px;
+  }
+
+  /* State: Today */
+  &.is-today {
+    .day-name, .day-number-circle {
+      color: var(--ion-color-primary); /* สีน้ำเงิน */
+    }
+  }
+
+  /* State: Selected (ชนะทุกอย่าง) */
+  &.selected {
+    .day-name {
+      color: #000;
+      font-weight: 600;
+    }
+    .day-number-circle {
+      background: #000;
+      color: #fff;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    &.is-today .day-number-circle {
+      background: var(--ion-color-primary); /* ถ้าเลือกวันนี้ ให้พื้นเป็นสี Primary */
+    }
+  }
+}
+
+/* --- Booking Card --- */
+.booking-list {
+  padding: 16px;
+}
+
+.booking-card {
+  margin: 0 0 16px 0;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  background: white;
+  position: relative;
+  overflow: hidden;
+
+  /* แถบสีด้านซ้าย */
+  .status-strip {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 5px;
+    
+    &.pending { background: var(--ion-color-warning); }
+    &.approved { background: var(--ion-color-success); }
+    &.active { background: var(--ion-color-primary); }
+    &.expired { background: var(--ion-color-medium); }
+  }
+
+  ion-item {
+    --padding-start: 16px;
+    --inner-padding-end: 16px;
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2px;
+    
+    h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0;
+    }
+    
+    ion-badge {
+      font-weight: 500;
+      padding: 4px 8px;
+    }
+  }
+
+  .company {
+    font-size: 0.85rem;
+    color: #666;
+    margin-bottom: 8px;
+  }
+
+  .time-info {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.85rem;
+    color: #444;
+    background: #f5f5f5;
+    padding: 4px 8px;
+    border-radius: 6px;
+    width: fit-content;
+    
+    ion-icon { font-size: 16px; }
+  }
+}
+
+/* Empty State */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 60px;
+  color: #8e8e93;
+
+  .empty-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+  }
+  
+  p { margin-bottom: 24px; }
+}
+
+.extra-space { height: 80px; }
+
+/* เพิ่ม Class นี้ตามที่ใช้ใน HTML */
+.add-icon-large {
+  font-size: 28px;
 }

@@ -1,0 +1,112 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>สร้างคำเชิญ (New Invite)</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="close()">
+        <ion-icon slot="icon-only" name="close-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding-top bg-light">
+  
+  <div class="form-container ion-padding-horizontal">
+    
+    <div class="section-header">
+      <ion-icon name="person-add-outline" color="primary"></ion-icon>
+      <ion-label>ข้อมูลผู้มาติดต่อ</ion-label>
+    </div>
+    
+    <ion-card class="form-card">
+      <ion-card-content class="ion-no-padding">
+        <ion-list lines="full">
+          
+          <ion-item>
+            <ion-icon name="person-outline" slot="start" color="medium"></ion-icon>
+            <ion-input label="ชื่อจริง" labelPlacement="stacked" placeholder="กรอกชื่อจริง" [(ngModel)]="bookingForm.visitor.firstName"></ion-input>
+          </ion-item>
+
+          <ion-item>
+            <ion-icon name="person-outline" slot="start" class="invisible"></ion-icon>
+            <ion-input label="นามสกุล" labelPlacement="stacked" placeholder="กรอกนามสกุล" [(ngModel)]="bookingForm.visitor.lastName"></ion-input>
+          </ion-item>
+
+          <ion-item>
+            <ion-icon name="business-outline" slot="start" color="medium"></ion-icon>
+            <ion-input label="บริษัท/หน่วยงาน" labelPlacement="stacked" placeholder="ระบุสังกัด" [(ngModel)]="bookingForm.visitor.company"></ion-input>
+          </ion-item>
+
+          <ion-item lines="none">
+            <ion-icon name="mail-outline" slot="start" color="medium"></ion-icon>
+            <ion-input type="email" label="อีเมล (ถ้ามี)" labelPlacement="stacked" placeholder="example@mail.com" [(ngModel)]="bookingForm.visitor.email"></ion-input>
+          </ion-item>
+
+        </ion-list>
+      </ion-card-content>
+    </ion-card>
+
+
+    <div class="section-header ion-margin-top">
+      <ion-icon name="calendar-outline" color="primary"></ion-icon>
+      <ion-label>ข้อมูลการเข้าพื้นที่</ion-label>
+    </div>
+
+    <ion-card class="form-card">
+      <ion-card-content class="ion-no-padding">
+        <ion-list lines="full">
+          
+          <ion-item>
+            <ion-icon name="location-outline" slot="start" color="medium"></ion-icon>
+            <ion-select label="อาคาร" labelPlacement="stacked" [(ngModel)]="bookingForm.access.buildingId">
+              <ion-select-option value="BLD-12">ตึก 12 ชั้น (ECC)</ion-select-option>
+              <ion-select-option value="BLD-HM">ตึกพระเทพฯ</ion-select-option>
+            </ion-select>
+          </ion-item>
+
+          <ion-item>
+            <ion-icon name="time-outline" slot="start" color="medium"></ion-icon>
+            <ion-label position="stacked">วันที่นัดหมาย</ion-label>
+            <ion-datetime-button datetime="datetime"></ion-datetime-button>
+            <ion-modal [keepContentsMounted]="true">
+              <ng-template>
+                <ion-datetime id="datetime" presentation="date" [(ngModel)]="bookingForm.timing.date"></ion-datetime>
+              </ng-template>
+            </ion-modal>
+          </ion-item>
+
+          <ion-item>
+             <ion-grid class="ion-no-padding">
+               <ion-row>
+                 <ion-col size="6">
+                   <ion-input label="เวลาเริ่ม" labelPlacement="stacked" type="time" [(ngModel)]="bookingForm.timing.startTime"></ion-input>
+                 </ion-col>
+                 <ion-col size="6">
+                   <ion-input label="เวลาสิ้นสุด" labelPlacement="stacked" type="time" [(ngModel)]="bookingForm.timing.endTime"></ion-input>
+                 </ion-col>
+               </ion-row>
+             </ion-grid>
+          </ion-item>
+
+          <ion-item lines="none">
+            <ion-icon name="key-outline" slot="start" color="medium"></ion-icon>
+            <ion-select label="ประเภทบัตร" labelPlacement="stacked" [(ngModel)]="bookingForm.access.passType">
+              <ion-select-option value="1-Day Pass">1-Day Pass (ทั่วไป)</ion-select-option>
+              <ion-select-option value="VIP Pass">VIP Pass</ion-select-option>
+              <ion-select-option value="Contractor">ผู้รับเหมา/ช่าง</ion-select-option>
+            </ion-select>
+          </ion-item>
+
+        </ion-list>
+      </ion-card-content>
+    </ion-card>
+
+    <div class="ion-padding-vertical">
+      <ion-button expand="block" size="large" shape="round" (click)="submitInvite()">
+        <ion-icon slot="start" name="paper-plane-outline"></ion-icon>
+        ส่งคำเชิญ
+      </ion-button>
+    </div>
+
+  </div>
+</ion-content>

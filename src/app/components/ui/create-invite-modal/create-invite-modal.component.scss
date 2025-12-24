@@ -1,0 +1,76 @@
+.bg-light {
+  --background: #f4f6fb;
+}
+
+.booking-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding-bottom: 40px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 16px 8px;
+  color: var(--ion-color-dark);
+  font-weight: 600;
+  font-size: 1rem;
+
+  ion-icon {
+    color: var(--ion-color-primary);
+    font-size: 1.2rem;
+  }
+}
+
+.form-card {
+  margin: 0 16px 8px;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  background: white;
+  overflow: visible;
+}
+
+.input-item {
+  --border-radius: 8px;
+  --highlight-color-focused: var(--ion-color-primary);
+  font-size: 0.95rem;
+  margin-bottom: 8px;
+}
+
+.select-item {
+  --padding-start: 0;
+  --inner-padding-end: 0;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.zone-label {
+  margin-bottom: 8px !important;
+  color: var(--ion-color-medium);
+}
+
+.time-item {
+  --background: #f8fafc;
+  --border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.datetime-trigger {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  --background: #fff;
+}
+
+.info-box {
+  display: flex;
+  gap: 8px;
+  background: #eff6ff;
+  color: #1e40af;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  margin-top: 12px;
+  align-items: center;
+}
