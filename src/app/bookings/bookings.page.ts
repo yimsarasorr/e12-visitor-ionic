@@ -258,7 +258,7 @@ export class BookingsPage implements OnInit, AfterViewInit, OnDestroy {
     const { data } = await modal.onWillDismiss();
     
     if (data?.payload) {
-      console.log('✅ Bookings Page Received:', data.payload);
+      console.log('Bookings Page Received:', data.payload);
       
       // เพิ่มเข้า List เพื่อดูผลลัพธ์บนหน้าจอทันที
       this.allBookings.push({
