@@ -1,21 +1,25 @@
 <app-fastpass-header></app-fastpass-header>
 
-<div class="calendar-section" #calendarStrip>
+<div class="calendar-section">
   <div class="calendar-header ion-padding-horizontal">
     <div class="month-label">{{ currentMonthLabel }}</div>
   </div>
 
-  <div class="week-strip">
-    <div *ngFor="let day of weekDays"
-         class="day-item"
-         [class.selected]="day.fullDate === selectedDate"
-         [class.is-today]="day.isToday"
-         (click)="selectDate(day.fullDate)">
-      <span class="day-name">{{ day.dayName }}</span>
-      <div class="day-number">
-        {{ day.dayNumber }}
+  <div class="week-strip-wrapper" style="overflow: hidden; width: 100%;">
+    <div class="week-strip" #calendarStrip>
+      <div *ngFor="let day of weekDays"
+           class="day-item"
+           [class.selected]="day.fullDate === selectedDate"
+           [class.is-today]="day.isToday"
+           (click)="selectDate(day.fullDate)">
+        <span class="day-name">{{ day.dayName }}</span>
+        <div class="day-number">
+          {{ day.dayNumber }}
+        </div>
+        <div class="event-indicator">
+          <div class="event-dot" *ngIf="day.hasEvent"></div>
+        </div>
       </div>
-      <div class="dot" *ngIf="day.isToday && day.fullDate !== selectedDate"></div>
     </div>
   </div>
 </div>
@@ -23,10 +27,7 @@
 <ion-content class="bg-light">
   <div class="booking-list ion-padding-top">
     <div *ngIf="filteredBookings.length === 0" class="empty-state">
-      <div class="empty-icon">
-        <ion-icon name="calendar-outline"></ion-icon>
-      </div>
-      <p>ไม่มีรายการนัดหมายในวันนี้</p>
+      <p class="ion-text-center ion-text-medium ion-padding-top">ไม่มีรายการนัดหมายในวันนี้</p>
     </div>
 
     <ion-card *ngFor="let item of filteredBookings" class="booking-card">

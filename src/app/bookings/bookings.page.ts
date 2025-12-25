@@ -1,4 +1,4 @@
-import { Component, OnInit, ElementRef, ViewChild, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, ElementRef, ViewChild, AfterViewInit, OnDestroy, Renderer2, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -15,6 +15,7 @@ interface CalendarDate {
   dayNumber: string;
   isToday: boolean;
   fullDate: string;
+  hasEvent: boolean; // [เพิ่ม] เช็คว่ามี Event ไหม
 }
 
 @Component({
@@ -33,6 +34,7 @@ export class BookingsPage implements OnInit, AfterViewInit, OnDestroy {
 
   @ViewChild('calendarStrip', { read: ElementRef }) calendarStripRef!: ElementRef;
   private gesture?: Gesture;
+  private isAnimating = false; // กันผู้ใช้ปัดซ้ำระหว่างกำลังเปลี่ยนวีค
 
   currentWeekStart: Date = new Date(); // วันอาทิตย์เริ่มต้นของสัปดาห์
   weekDays: CalendarDate[] = [];
@@ -74,7 +76,9 @@ export class BookingsPage implements OnInit, AfterViewInit, OnDestroy {
 
   constructor(
     private modalCtrl: ModalController,
-    private gestureCtrl: GestureController
+    private gestureCtrl: GestureController,
+    private renderer: Renderer2,
+    private ngZone: NgZone // Inject NgZone
   ) {
     addIcons({ addOutline, timeOutline, calendarOutline });
   }
@@ -99,24 +103,74 @@ export class BookingsPage implements OnInit, AfterViewInit, OnDestroy {
     if (this.gesture) this.gesture.destroy();
   }
 
-  // สร้างระบบปัดซ้าย/ขวา เพื่อเปลี่ยนสัปดาห์
+  // สร้างระบบปัดซ้าย/ขวา เพื่อเปลี่ยนสัปดาห์ (Follow Finger + Animate)
   initSwipeGesture() {
     if (!this.calendarStripRef) return;
+    const element = this.calendarStripRef.nativeElement;
 
     this.gesture = this.gestureCtrl.create({
-      el: this.calendarStripRef.nativeElement,
+      el: element,
       gestureName: 'swipe-calendar',
-      threshold: 15,
+      threshold: 5, // แตะนิดเดียวก็เริ่มขยับ
       direction: 'x',
+      onStart: () => {
+        // ปิด Transition ชั่วคราวเพื่อให้ตามนิ้วแบบเนียน
+        this.renderer.setStyle(element, 'transition', 'none');
+      },
+      onMove: (ev) => {
+        if (this.isAnimating) return;
+        // ขยับตามระยะนิ้วลาก
+        this.renderer.setStyle(element, 'transform', `translateX(${ev.deltaX}px)`);
+      },
       onEnd: (ev) => {
-        if (ev.deltaX < -50) {
-          this.nextWeek();
-        } else if (ev.deltaX > 50) {
-          this.prevWeek();
+        if (this.isAnimating) return;
+        // เปิด Transition กลับเพื่อให้เด้งสวย
+        this.renderer.setStyle(element, 'transition', 'transform 0.3s cubic-bezier(0.2, 0.0, 0.2, 1)');
+
+        const threshold = 80; // ต้องลากเกิน 80px ถึงจะเปลี่ยนสัปดาห์
+        if (ev.deltaX < -threshold) {
+          // ปัดซ้ายมาก -> ไปวีคหน้า
+          this.renderer.setStyle(element, 'transform', `translateX(-120%)`);
+          this.handleSlideChange('next');
+        } else if (ev.deltaX > threshold) {
+          // ปัดขวามาก -> ไปวีคก่อน
+          this.renderer.setStyle(element, 'transform', `translateX(120%)`);
+          this.handleSlideChange('prev');
+        } else {
+          // ไม่ถึงเกณฑ์ -> เด้งกลับที่เดิม
+          this.renderer.setStyle(element, 'transform', 'translateX(0)');
         }
       }
     });
     this.gesture.enable(true);
+  }
+
+  // จัดการ Slide Out -> อัปเดตข้อมูล -> Teleport -> Slide In
+  private handleSlideChange(direction: 'next' | 'prev') {
+    this.isAnimating = true;
+    const element = this.calendarStripRef.nativeElement;
+
+    // รอให้ Animation ตอนปล่อยนิ้วจบก่อน
+    setTimeout(() => {
+      // รันใน Angular Zone เพื่อให้หน้าจออัปเดต
+      this.ngZone.run(() => {
+        if (direction === 'next') this.nextWeek();
+        else this.prevWeek();
+      });
+
+      // Teleport แล้ว Slide In
+      this.renderer.setStyle(element, 'transition', 'none');
+      const startPos = direction === 'next' ? '100%' : '-100%';
+      this.renderer.setStyle(element, 'transform', `translateX(${startPos})`);
+      // Force reflow
+      void element.offsetHeight;
+      this.renderer.setStyle(element, 'transition', 'transform 0.3s cubic-bezier(0.2, 0.0, 0.2, 1)');
+      this.renderer.setStyle(element, 'transform', 'translateX(0)');
+
+      setTimeout(() => {
+        this.isAnimating = false;
+      }, 300);
+    }, 300);
   }
 
   // สร้าง 7 วัน (อา-ส) และอัพเดต month label
@@ -134,12 +188,16 @@ export class BookingsPage implements OnInit, AfterViewInit, OnDestroy {
       d.setDate(this.currentWeekStart.getDate() + i);
       const dateStr = d.toISOString().split('T')[0];
 
+      // [เพิ่ม] เช็คว่าวันนี้มี Booking ไหม
+      const hasEvent = this.allBookings.some(b => b.date === dateStr);
+
       this.weekDays.push({
         dateObj: d,
         dayName: daysTh[d.getDay()],
         dayNumber: d.getDate().toString(),
         isToday: dateStr === todayStr,
-        fullDate: dateStr
+        fullDate: dateStr,
+        hasEvent // [เพิ่ม] ส่งค่าไป
       });
     }
 
@@ -193,27 +251,28 @@ export class BookingsPage implements OnInit, AfterViewInit, OnDestroy {
       mode: 'ios',
       presentingElement: await this.modalCtrl.getTop() || undefined
     });
+
     await modal.present();
-
+    
+    // รอรับค่าเมื่อ Modal ปิด
     const { data } = await modal.onWillDismiss();
+    
     if (data?.payload) {
-      const p = data.payload;
-      const date = p.validStartDateLocal;
-      const start = (p.validStartTimeLocal || '').slice(0, 5);
-      const end = (p.validEndTimeLocal || '').slice(0, 5);
-      const visitorName = `${p.visitorProfile.firstName || ''} ${p.visitorProfile.lastName || ''}`.trim();
-
-      // เพิ่มรายการใหม่เข้า list แล้วรีเฟรชตามวัน
+      console.log('✅ Bookings Page Received:', data.payload);
+      
+      // เพิ่มเข้า List เพื่อดูผลลัพธ์บนหน้าจอทันที
       this.allBookings.push({
         id: Date.now(),
-        visitorName,
-        company: p.visitorProfile.company,
-        time: `${start} - ${end}`,
-        status: p.statusDescription === 'pending_approval' ? 'pending' : 'approved',
-        date,
-        avatar: `https://i.pravatar.cc/150?u=${p.visitorProfile.email || p.visitorProfile.phone || p.visitorProfile.visitorId}`
+        visitorName: `${data.payload.visitorProfile.firstName} ${data.payload.visitorProfile.lastName}`,
+        company: data.payload.visitorProfile.company,
+        time: `${data.payload.validStartTimeLocal.slice(0,5)} - ${data.payload.validEndTimeLocal.slice(0,5)}`,
+        status: 'pending',
+        date: data.payload.validStartDateLocal,
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.payload.visitorProfile.firstName)}+${encodeURIComponent(data.payload.visitorProfile.lastName)}`
       });
-      this.filterBookings();
+      
+      // Refresh หน้าจอ
+      this.selectDate(this.selectedDate);
     }
   }
 }

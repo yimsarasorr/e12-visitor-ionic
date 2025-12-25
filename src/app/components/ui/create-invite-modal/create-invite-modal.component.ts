@@ -157,6 +157,10 @@ export class CreateInviteModalComponent implements OnInit {
       }
     };
 
+    console.group('Creating Invite Payload');
+    console.log(JSON.stringify(payload, null, 2));
+    console.groupEnd();
+
     this.modalCtrl.dismiss({ created: true, payload });
   }
 

@@ -11,6 +11,7 @@
   position: sticky;
   top: 0;
   z-index: 10;
+  min-height: 100px; /* กำหนดความสูงขั้นต่ำไว้เลยเพื่อกันกระโดด */
 }
 
 .calendar-header {
@@ -38,15 +39,18 @@
   justify-content: space-between;
   padding: 0 12px;
   margin-top: 4px;
+  will-change: transform; /* แยก render layer เพื่อให้แอนิเมชันลื่นขึ้น */
+  width: 100%; /* ให้เต็มพื้นที่ของ wrapper */
 }
 
 .day-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  width: 40px;
-  padding: 6px 0;
+  justify-content: flex-start; /* อิงด้านบนเป็นหลัก */
+  width: 44px; /* กว้างขึ้นให้กดง่าย */
+  height: 72px; /* ฟิกความสูงไว้เลย */
+  padding-top: 6px;
   cursor: pointer;
   border-radius: 20px;
 
@@ -55,6 +59,7 @@
     color: #8e8e93; /* iOS Gray */
     margin-bottom: 4px;
     font-weight: 500;
+    height: 14px; /* ฟิกความสูงตัวหนังสือ */
   }
 
   .day-number {
@@ -67,19 +72,31 @@
     font-size: 1rem;
     font-weight: 500;
     color: #000;
+    margin-bottom: 4px;
   }
 
-  .dot {
-    width: 4px;
-    height: 4px;
+  /* กล่องเก็บจุด Event (จองพื้นที่ไว้เสมอ) */
+  .event-indicator {
+    height: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* จุด Event สีเทาๆ (สไตล์ iOS) */
+  .event-dot {
+    width: 5px;
+    height: 5px;
     border-radius: 50%;
-    background: var(--ion-color-primary);
-    margin-top: 4px;
+    background-color: #8e8e93;
   }
 
   /* State: Today */
   &.is-today {
-    .day-name, .day-number { color: var(--ion-color-primary); }
+    .day-name, .day-number { 
+      color: var(--ion-color-primary);
+      font-weight: 600;
+    }
   }
 
   /* State: Selected (ชนะทุกอย่าง) */
@@ -94,6 +111,10 @@
     &.is-today .day-number {
       background: var(--ion-color-primary);
       color: white;
+    }
+
+    .event-dot {
+      background-color: #8e8e93; /* คงสีจุดให้คงที่ */
     }
   }
 }
