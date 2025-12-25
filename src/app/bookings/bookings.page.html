@@ -1,65 +1,39 @@
-<ion-header class="ion-no-border">
-  <ion-toolbar mode="ios">
-    <ion-buttons slot="start">
-      <ion-button color="primary" routerLink="/tabs/home">
-        <ion-icon slot="icon-only" name="chevron-back-outline"></ion-icon>
-      </ion-button>
-    </ion-buttons>
+<app-fastpass-header></app-fastpass-header>
 
-    <ion-title>การนัดหมาย</ion-title>
+<div class="calendar-section" #calendarStrip>
+  <div class="calendar-header ion-padding-horizontal">
+    <div class="month-label">{{ currentMonthLabel }}</div>
+  </div>
 
-    <ion-buttons slot="end">
-      <ion-button color="primary" (click)="showSearch = !showSearch">
-        <ion-icon slot="icon-only" name="search-outline"></ion-icon>
-      </ion-button>
-      <ion-button color="primary" (click)="openCreateModal()">
-        <ion-icon slot="icon-only" name="add-outline" class="add-icon-large"></ion-icon>
-      </ion-button>
-    </ion-buttons>
-  </ion-toolbar>
-
-  <ion-toolbar *ngIf="showSearch">
-    <ion-searchbar placeholder="ค้นหาชื่อ Visitor..." mode="ios"></ion-searchbar>
-  </ion-toolbar>
-
-  <div class="calendar-strip-container">
-    <div class="calendar-scroll">
-      <div *ngFor="let day of calendarDates" 
-           class="date-item" 
-           [class.selected]="day.fullDate === selectedDate"
-           [class.is-today]="day.isToday"
-           (click)="selectDate(day.fullDate)">
-        
-        <span class="day-name">{{ day.dayName }}</span>
-        <div class="day-number-circle">
-          {{ day.dayNumber }}
-        </div>
-        <div class="dot" *ngIf="day.isToday && day.fullDate !== selectedDate"></div>
+  <div class="week-strip">
+    <div *ngFor="let day of weekDays"
+         class="day-item"
+         [class.selected]="day.fullDate === selectedDate"
+         [class.is-today]="day.isToday"
+         (click)="selectDate(day.fullDate)">
+      <span class="day-name">{{ day.dayName }}</span>
+      <div class="day-number">
+        {{ day.dayNumber }}
       </div>
+      <div class="dot" *ngIf="day.isToday && day.fullDate !== selectedDate"></div>
     </div>
   </div>
-</ion-header>
+</div>
 
 <ion-content class="bg-light">
-  
   <div class="booking-list ion-padding-top">
-    
     <div *ngIf="filteredBookings.length === 0" class="empty-state">
       <div class="empty-icon">
         <ion-icon name="calendar-outline"></ion-icon>
       </div>
       <p>ไม่มีรายการนัดหมายในวันนี้</p>
-      <ion-button fill="outline" size="small" (click)="openCreateModal()">
-        สร้างนัดหมายใหม่
-      </ion-button>
     </div>
 
     <ion-card *ngFor="let item of filteredBookings" class="booking-card">
       <div class="status-strip" [class]="item.status"></div>
-      
       <ion-item lines="none" detail="false">
         <ion-avatar slot="start">
-          <img [src]="item.avatar" alt="Visitor Avatar" />
+          <img [src]="item.avatar" alt="avatar" />
         </ion-avatar>
         <ion-label>
           <div class="card-header">
@@ -69,7 +43,6 @@
             </ion-badge>
           </div>
           <p class="company">{{ item.company }}</p>
-          
           <div class="time-info">
             <ion-icon name="time-outline"></ion-icon>
             <span>{{ item.time }}</span>
@@ -77,8 +50,11 @@
         </ion-label>
       </ion-item>
     </ion-card>
-
   </div>
 
-  <div class="extra-space"></div>
+  <ion-fab vertical="bottom" horizontal="end" slot="fixed">
+    <ion-fab-button (click)="openCreateModal()">
+      <ion-icon name="add-outline"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
 </ion-content>

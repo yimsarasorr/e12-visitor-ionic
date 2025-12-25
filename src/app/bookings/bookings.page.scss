@@ -3,54 +3,70 @@
   --background: #f2f2f7; /* iOS Gray Background */
 }
 
-/* --- Calendar Strip --- */
-.calendar-strip-container {
+/* Calendar Section */
+.calendar-section {
   background: white;
-  border-bottom: 1px solid #e5e5ea;
   padding-bottom: 8px;
+  border-bottom: 1px solid #e5e5ea;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
-.calendar-scroll {
+.calendar-header {
   display: flex;
-  overflow-x: auto;
-  padding: 0 16px;
-  gap: 12px;
-  /* ซ่อน Scrollbar */
-  scrollbar-width: none; 
-  &::-webkit-scrollbar { 
-    display: none; 
-    width: 0;     /* เพิ่มเพื่อความเข้ากันได้กับ webkit */
-    height: 0;    /* เพิ่มเพื่อความเข้ากันได้กับ webkit */
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 8px;
+
+  .month-label {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--ion-color-dark);
+  }
+
+  .nav-buttons {
+    ion-button {
+      --color: var(--ion-color-primary);
+      margin: 0;
+    }
   }
 }
 
-.date-item {
+.week-strip {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 12px;
+  margin-top: 4px;
+}
+
+.day-item {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-width: 44px;
-  padding: 8px 0;
+  width: 40px;
+  padding: 6px 0;
   cursor: pointer;
-  
+  border-radius: 20px;
+
   .day-name {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: #8e8e93; /* iOS Gray */
     margin-bottom: 4px;
     font-weight: 500;
   }
 
-  .day-number-circle {
-    width: 36px;
-    height: 36px;
+  .day-number {
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.1rem;
-    font-weight: 600;
+    font-size: 1rem;
+    font-weight: 500;
     color: #000;
-    transition: all 0.2s;
   }
 
   .dot {
@@ -63,24 +79,21 @@
 
   /* State: Today */
   &.is-today {
-    .day-name, .day-number-circle {
-      color: var(--ion-color-primary); /* สีน้ำเงิน */
-    }
+    .day-name, .day-number { color: var(--ion-color-primary); }
   }
 
   /* State: Selected (ชนะทุกอย่าง) */
   &.selected {
-    .day-name {
-      color: #000;
-      font-weight: 600;
-    }
-    .day-number-circle {
+    .day-number {
       background: #000;
       color: #fff;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      font-weight: 600;
     }
-    &.is-today .day-number-circle {
-      background: var(--ion-color-primary); /* ถ้าเลือกวันนี้ ให้พื้นเป็นสี Primary */
+    .day-name { color: #000; font-weight: 600; }
+
+    &.is-today .day-number {
+      background: var(--ion-color-primary);
+      color: white;
     }
   }
 }

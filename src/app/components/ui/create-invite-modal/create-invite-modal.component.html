@@ -49,7 +49,7 @@
 
     <div class="section-header ion-margin-top">
       <ion-icon name="calendar-outline" color="primary"></ion-icon>
-      <ion-label>ข้อมูลการเข้าพื้นที่</ion-label>
+      <ion-label>สิทธิ์และการเข้าถึง</ion-label>
     </div>
 
     <ion-card class="form-card">
@@ -61,6 +61,18 @@
             <ion-select label="อาคาร" labelPlacement="stacked" [(ngModel)]="bookingForm.access.buildingId">
               <ion-select-option value="BLD-12">ตึก 12 ชั้น (ECC)</ion-select-option>
               <ion-select-option value="BLD-HM">ตึกพระเทพฯ</ion-select-option>
+            </ion-select>
+          </ion-item>
+
+          <!-- ย้าย Pass Type ขึ้นมาก่อน Time -->
+          <ion-item lines="none">
+            <ion-icon name="key-outline" slot="start" color="medium"></ion-icon>
+            <ion-select label="ประเภทบัตร" labelPlacement="stacked"
+                        [(ngModel)]="bookingForm.access.passType"
+                        (ionChange)="onPassTypeChange()">
+              <ion-select-option value="1-Day Pass">1-Day Pass (ทั้งวัน)</ion-select-option>
+              <ion-select-option value="Business Hours">Business Hours (08-17)</ion-select-option>
+              <ion-select-option value="Custom">กำหนดเวลาเอง</ion-select-option>
             </ion-select>
           </ion-item>
 
@@ -76,25 +88,20 @@
           </ion-item>
 
           <ion-item>
-             <ion-grid class="ion-no-padding">
-               <ion-row>
-                 <ion-col size="6">
-                   <ion-input label="เวลาเริ่ม" labelPlacement="stacked" type="time" [(ngModel)]="bookingForm.timing.startTime"></ion-input>
-                 </ion-col>
-                 <ion-col size="6">
-                   <ion-input label="เวลาสิ้นสุด" labelPlacement="stacked" type="time" [(ngModel)]="bookingForm.timing.endTime"></ion-input>
-                 </ion-col>
-               </ion-row>
-             </ion-grid>
-          </ion-item>
-
-          <ion-item lines="none">
-            <ion-icon name="key-outline" slot="start" color="medium"></ion-icon>
-            <ion-select label="ประเภทบัตร" labelPlacement="stacked" [(ngModel)]="bookingForm.access.passType">
-              <ion-select-option value="1-Day Pass">1-Day Pass (ทั่วไป)</ion-select-option>
-              <ion-select-option value="VIP Pass">VIP Pass</ion-select-option>
-              <ion-select-option value="Contractor">ผู้รับเหมา/ช่าง</ion-select-option>
-            </ion-select>
+            <ion-grid class="ion-no-padding">
+              <ion-row>
+                <ion-col size="6">
+                  <ion-input label="เวลาเริ่ม" labelPlacement="stacked" type="time"
+                             [(ngModel)]="bookingForm.timing.startTime"
+                             [readonly]="isTimeLocked"></ion-input>
+                </ion-col>
+                <ion-col size="6">
+                  <ion-input label="เวลาสิ้นสุด" labelPlacement="stacked" type="time"
+                             [(ngModel)]="bookingForm.timing.endTime"
+                             [readonly]="isTimeLocked"></ion-input>
+                </ion-col>
+              </ion-row>
+            </ion-grid>
           </ion-item>
 
         </ion-list>
