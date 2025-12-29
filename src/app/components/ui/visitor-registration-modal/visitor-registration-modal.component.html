@@ -1,0 +1,58 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>ลงทะเบียนผู้มาติดต่อ</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="close()" [disabled]="isLoading">
+        <ion-icon name="close-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+
+  <div *ngIf="step === 'form'" class="form-step">
+    <div class="header-text ion-margin-bottom">
+      <h2>ตรวจสอบข้อมูลของท่าน</h2>
+      <p class="ion-text-muted">กรุณากรอกข้อมูลให้ครบถ้วนเพื่อรับสิทธิ์เข้าอาคาร</p>
+    </div>
+
+    <ion-item fill="outline" class="ion-margin-bottom">
+      <ion-icon slot="start" name="person-outline"></ion-icon>
+      <ion-input label="ชื่อจริง" labelPlacement="floating" [(ngModel)]="formData.firstName"></ion-input>
+    </ion-item>
+
+    <ion-item fill="outline" class="ion-margin-bottom">
+      <ion-icon slot="start" name="person-outline" style="opacity: 0"></ion-icon>
+      <ion-input label="นามสกุล" labelPlacement="floating" [(ngModel)]="formData.lastName"></ion-input>
+    </ion-item>
+
+    <ion-item fill="outline" class="ion-margin-bottom">
+      <ion-icon slot="start" name="call-outline"></ion-icon>
+      <ion-input label="เบอร์โทรศัพท์" labelPlacement="floating" type="tel" [(ngModel)]="formData.phone"></ion-input>
+    </ion-item>
+
+    <ion-item fill="outline" class="ion-margin-bottom">
+      <ion-icon slot="start" name="business-outline"></ion-icon>
+      <ion-input label="บริษัท / หน่วยงาน" labelPlacement="floating" [(ngModel)]="formData.company"></ion-input>
+    </ion-item>
+
+    <ion-button expand="block" (click)="submitRegistration()" [disabled]="!formData.firstName || !formData.phone || isLoading">
+      <ion-spinner *ngIf="isLoading" name="crescent"></ion-spinner>
+      <span *ngIf="!isLoading">ยืนยันข้อมูล</span>
+    </ion-button>
+  </div>
+
+  <div *ngIf="step === 'success'" class="success-step ion-text-center">
+    <div class="success-icon">
+      <ion-icon name="checkmark-circle-outline" color="success"></ion-icon>
+    </div>
+    <h2>ลงทะเบียนสำเร็จ!</h2>
+    <p class="ion-text-muted">ท่านได้รับสิทธิ์เข้าอาคารเรียบร้อยแล้ว</p>
+    
+    <ion-button expand="block" color="success" (click)="finish()" class="ion-margin-top">
+      ดูบัตรผ่าน (E-Pass)
+    </ion-button>
+  </div>
+
+</ion-content>

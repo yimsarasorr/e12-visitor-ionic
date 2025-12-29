@@ -1,0 +1,40 @@
+.profile-avatar {
+  width: 100px; height: 100px; margin: 0 auto 16px;
+}
+.bg-light { --background: #f4f5f8; }
+
+/* Guest Styles */
+.guest-hero {
+  margin-top: 40px;
+  margin-bottom: 30px;
+  .icon-circle {
+    width: 80px; height: 80px; background: #e0e7ff; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;
+    ion-icon { font-size: 40px; color: var(--ion-color-primary); }
+  }
+  h2 { font-weight: 700; color: #1e293b; }
+  p { color: #64748b; max-width: 80%; margin: 8px auto 0; }
+}
+
+/* Visitor Styles */
+.access-card {
+  border-radius: 20px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  .card-header-strip {
+    background: var(--ion-color-primary); color: white; text-align: center;
+    padding: 8px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+  }
+  .qr-placeholder {
+    margin: 20px auto; padding: 10px; background: white; border: 1px dashed #cbd5e1;
+    display: inline-block; border-radius: 12px;
+    img { width: 160px; height: 160px; display: block; }
+  }
+  .visitor-name { font-size: 1.4rem; font-weight: 700; color: #0f172a; margin: 0; }
+  .company-name { font-size: 1rem; color: #64748b; margin-top: 4px; }
+  
+  .access-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #dcfce7; color: #166534; padding: 6px 16px;
+    border-radius: 20px; margin-top: 16px; font-weight: 600;
+  }
+  .validity { margin-top: 12px; font-size: 0.9rem; color: #94a3b8; }
+}
