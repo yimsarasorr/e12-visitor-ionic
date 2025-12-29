@@ -77,7 +77,6 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
   line-height: 1.1;
-  line-clamp: 2; /* เพิ่มมาตรฐานตาม warning */
 }
 
 /* ส่วนรายละเอียดด้านขวา */
@@ -142,9 +141,4 @@
   margin: 0 auto 16px;
   font-size: 32px;
   color: var(--ion-color-medium);
-}
-
-/* Chevron Icon */
-.chevron-icon {
-  font-size: 16px;
 }
