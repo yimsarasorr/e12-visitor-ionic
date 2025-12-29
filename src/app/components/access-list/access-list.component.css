@@ -42,22 +42,42 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 4px;
+  padding: 4px; /* ลด padding เพื่อให้มีที่เยอะขึ้น */
   margin-right: 16px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.08);
   flex-shrink: 0;
 }
 
-/* ชื่อห้องภายในกล่อง */
-.room-box-square span {
+/* [เพิ่มใหม่] Container ข้างในกล่อง */
+.room-box-inner {
+  display: flex;
+  flex-direction: column; /* เรียงแนวตั้ง */
+  align-items: center;
+  justify-content: center;
+  line-height: 1; /* ลดระยะห่างบรรทัด */
+  text-align: center;
+  width: 100%;
+}
+
+/* คำว่า "ห้อง" */
+.box-prefix {
+  font-size: 0.75rem; /* ตัวเล็กๆ */
+  font-weight: 500;
+  margin-bottom: 2px;
+  opacity: 0.9;
+}
+
+/* เลขห้อง "1A-1" */
+.box-number {
+  font-size: 1.3rem; /* ตัวใหญ่สะใจ */
   font-weight: 700;
-  font-size: 1rem;
-  line-height: 1.2;
   word-break: break-word;
   display: -webkit-box;
-  -webkit-line-clamp: 2; /* แสดงไม่เกิน 2 บรรทัด */
+  -webkit-line-clamp: 2; /* ยอมให้ขึ้นบรรทัดใหม่ได้ถ้าเลขยาวมาก */
   -webkit-box-orient: vertical;
   overflow: hidden;
+  line-height: 1.1;
+  line-clamp: 2; /* เพิ่มมาตรฐานตาม warning */
 }
 
 /* ส่วนรายละเอียดด้านขวา */
@@ -122,4 +142,9 @@
   margin: 0 auto 16px;
   font-size: 32px;
   color: var(--ion-color-medium);
+}
+
+/* Chevron Icon */
+.chevron-icon {
+  font-size: 16px;
 }

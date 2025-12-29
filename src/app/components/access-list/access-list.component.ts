@@ -86,6 +86,20 @@ export class AccessListComponent implements OnInit {
     this.bottomSheet.showRoomDetail(room);
   }
 
+  // [เพิ่ม] แยก "ห้อง" ออกจากชื่อห้อง
+  getRoomDisplay(fullName: string) {
+    if (fullName && fullName.includes('ห้อง')) {
+      return {
+        prefix: 'ห้อง',
+        number: fullName.replace('ห้อง', '').trim()
+      };
+    }
+    return {
+      prefix: '',
+      number: fullName
+    };
+  }
+
   private buildRoomSummaries(allowList: string[]): RoomAccessSummary[] {
     const floorData = this.interaction.getCurrentFloorData();
     if (!floorData?.zones) {

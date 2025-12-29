@@ -3,9 +3,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
   IonContent, IonIcon, IonCard, IonItem, IonLabel,
-  IonAvatar, IonBadge, ModalController, GestureController, Gesture, IonFab, IonFabButton } from '@ionic/angular/standalone';
+  IonAvatar, IonBadge, ModalController, GestureController, Gesture, IonFab, IonFabButton, IonButton } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { addOutline, timeOutline, calendarOutline } from 'ionicons/icons';
+import { addOutline, timeOutline, calendarOutline, chevronBackOutline, chevronForwardOutline } from 'ionicons/icons';
 import { FastpassHeaderComponent } from '../components/ui/fastpass-header/fastpass-header.component';
 import { CreateInviteModalComponent } from '../components/ui/create-invite-modal/create-invite-modal.component';
 
@@ -15,7 +15,7 @@ interface CalendarDate {
   dayNumber: string;
   isToday: boolean;
   fullDate: string;
-  hasEvent: boolean; // [เพิ่ม] เช็คว่ามี Event ไหม
+  hasEvent: boolean;
 }
 
 @Component({
@@ -23,7 +23,7 @@ interface CalendarDate {
   templateUrl: './bookings.page.html',
   styleUrls: ['./bookings.page.scss'],
   standalone: true,
-  imports: [IonFabButton, IonFab, 
+  imports: [IonButton, IonFabButton, IonFab, 
     CommonModule, FormsModule,
     IonContent, IonIcon, IonCard, IonItem, IonLabel,
     IonAvatar, IonBadge,
@@ -80,7 +80,7 @@ export class BookingsPage implements OnInit, AfterViewInit, OnDestroy {
     private renderer: Renderer2,
     private ngZone: NgZone // Inject NgZone
   ) {
-    addIcons({ addOutline, timeOutline, calendarOutline });
+    addIcons({ addOutline, timeOutline, calendarOutline, chevronBackOutline, chevronForwardOutline });
   }
 
   ngOnInit() {
@@ -145,8 +145,20 @@ export class BookingsPage implements OnInit, AfterViewInit, OnDestroy {
     this.gesture.enable(true);
   }
 
+  // Trigger slide-out via button, then delegate to existing slide-change logic
+  slideWeek(direction: 'next' | 'prev') {
+    if (this.isAnimating || !this.calendarStripRef) return;
+
+    const element = this.calendarStripRef.nativeElement;
+    this.renderer.setStyle(element, 'transition', 'transform 0.3s cubic-bezier(0.2, 0.0, 0.2, 1)');
+    const translateVal = direction === 'next' ? '-120%' : '120%';
+    this.renderer.setStyle(element, 'transform', `translateX(${translateVal})`);
+
+    this.handleSlideChange(direction);
+  }
+
   // จัดการ Slide Out -> อัปเดตข้อมูล -> Teleport -> Slide In
-  private handleSlideChange(direction: 'next' | 'prev') {
+  public handleSlideChange(direction: 'next' | 'prev') {
     this.isAnimating = true;
     const element = this.calendarStripRef.nativeElement;
 
