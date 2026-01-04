@@ -27,6 +27,7 @@
     "@capacitor/keyboard": "7.0.3",
     "@capacitor/status-bar": "7.0.3",
     "@ionic/angular": "^8.0.0",
+    "@line/liff": "^2.27.3",
     "@supabase/supabase-js": "^2.86.0",
     "ionicons": "^7.0.0",
     "leaflet": "^1.9.4",
