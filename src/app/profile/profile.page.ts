@@ -23,7 +23,8 @@ import { LineService } from '../services/line.service'; // 1. Import Service
     CommonModule, FormsModule,
     IonContent, IonHeader, IonTitle, IonToolbar, IonList, IonItem,
     IonIcon, IonLabel, IonAvatar, IonButton, IonSelect, IonSelectOption,
-    IonCard, IonCardContent, IonInput]
+    IonCard, IonCardContent, IonInput, IonSpinner // เพิ่ม IonSpinner
+  ]
 })
 export class ProfilePage implements OnInit {
 
@@ -45,8 +46,8 @@ export class ProfilePage implements OnInit {
   }
 
   async ngOnInit() {
-    // 3. เริ่มกระบวนการเช็ค LIFF
-    this.checkLineContext();
+    // เริ่มเช็ค LIFF ทันทีที่เข้าหน้า Profile
+    await this.checkLineContext(); // เพิ่ม await
   }
 
   async checkLineContext() {
@@ -55,47 +56,57 @@ export class ProfilePage implements OnInit {
     // Init LIFF
     await this.lineService.initLiff();
 
+    // ดึง Invite Code จาก URL (?code=...) ทำงานได้ทั้ง LINE และ Browser
+    const codeFromUrl = this.lineService.getInviteCodeFromUrl();
+
     // เช็คว่าเปิดใน LINE จริงไหม?
     if (this.lineService.isInClient()) {
-      console.log('✅ Running inside LINE App');
+      console.log('📱 Running inside LINE App');
 
       // ดึงข้อมูล User (Binding LINE ID)
       this.lineProfile = await this.lineService.getProfile();
-      console.log('Visitor LINE Profile:', this.lineProfile);
-
-      // ดึง Invite Code จาก URL (?code=...)
-      const codeFromUrl = this.lineService.getInviteCodeFromUrl();
 
       if (codeFromUrl) {
-        console.log('🎫 Found Invite Code:', codeFromUrl);
-
-        // Auto Switch to Guest Flow
-        this.currentRole = 'guest';
-        this.inviteCode = codeFromUrl;
-
-        // Auto Open Modal (UX: เด้งฟอร์มให้กรอกเลย)
-        setTimeout(() => {
-          this.verifyInviteCode();
-        }, 500);
+        // CASE A: มี Code -> เข้าโหมด Guest และเปิดลงทะเบียน
+        this.handleGuestFlow(codeFromUrl);
       } else {
-        // ถ้าเปิดใน LINE แต่ไม่มี Code -> สมมติเป็น Visitor (Demo)
+        // CASE B: ไม่มี Code -> สมมติเป็น Visitor ที่เข้าดูบัตร
         this.currentRole = 'visitor';
-
-        // Mock ข้อมูลจาก LINE Profile มาแสดง
-        if (this.lineProfile) {
-          this.visitorProfile = {
-            firstName: this.lineProfile.displayName,
-            lastName: '(LINE)',
-            company: 'Via LINE App'
-          };
-        }
+        this.mockVisitorDataFromLine();
       }
     } else {
-      console.log('💻 Running in Browser / Normal App');
-      // ปล่อยค่า Default
+      console.log('💻 Running in Browser');
+      // Browser ก็จำลองด้วย ?code=... ได้
+      if (codeFromUrl) {
+        this.handleGuestFlow(codeFromUrl);
+      }
     }
 
     this.isLiffLoading = false;
+  }
+
+  // แยก Logic การเข้าโหมด Guest
+  handleGuestFlow(code: string) {
+    console.log('🎫 Found Invite Code:', code);
+    this.currentRole = 'guest';
+    this.inviteCode = code;
+
+    // Auto-open Modal (รอ UI Render เล็กน้อย)
+    setTimeout(() => {
+      this.verifyInviteCode();
+    }, 500);
+  }
+
+  // สร้างข้อมูล Visitor จำลองจาก LINE Profile
+  mockVisitorDataFromLine() {
+    if (this.lineProfile) {
+      this.visitorProfile = {
+        firstName: this.lineProfile.displayName,
+        lastName: '(LINE)',
+        company: 'Via LINE App',
+        pictureUrl: this.lineProfile.pictureUrl
+      };
+    }
   }
 
   // ฟังก์ชันกดปุ่ม "ตรวจสอบ Code"
@@ -129,5 +140,6 @@ export class ProfilePage implements OnInit {
     this.currentRole = 'guest';
     this.inviteCode = '';
     this.visitorProfile = null;
+    this.lineProfile = null; // เคลียร์โปรไฟล์ LINE
   }
 }
