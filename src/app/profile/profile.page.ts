@@ -26,6 +26,7 @@ import { LineService } from '../services/line.service'; // 1. Import Service
     IonCard, IonCardContent, IonInput, IonSpinner // เพิ่ม IonSpinner
   ]
 })
+// Profile Page
 export class ProfilePage implements OnInit {
 
   // Role จำลอง: 'user' (เจ้าของตึก), 'guest' (คนนอกที่เพิ่งโหลดแอป), 'visitor' (คนนอกที่ลงทะเบียนแล้ว)
