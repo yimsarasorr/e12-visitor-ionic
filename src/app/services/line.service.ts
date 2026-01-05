@@ -6,9 +6,7 @@ import liff from '@line/liff';
 })
 export class LineService {
 
-  // ⚠️ ใส่ LIFF ID ของคุณที่ได้จาก LINE Developers Console ตรงนี้
-  // ถ้ายังไม่มีใส่ 'YOUR_LIFF_ID' ไว้ก่อน (แต่จะรันจริงไม่ได้นะ)
-  private readonly LIFF_ID = 'YOUR_LIFF_ID_HERE'; 
+  private readonly LIFF_ID = '2008822504-QHufvISJ'; 
 
   constructor() { }
 
