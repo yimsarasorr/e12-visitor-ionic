@@ -30,6 +30,37 @@
         <ion-label>ออกจากระบบ</ion-label>
       </ion-item>
     </ion-list>
+
+    <!-- Dev: ปุ่มทดสอบเปลี่ยน Rich Menu ตาม Role -->
+    <ion-card class="ion-margin-top">
+      <ion-card-header>
+        <ion-card-title>Dev: Change Rich Menu</ion-card-title>
+        <ion-card-subtitle>จำลองการเปลี่ยน Role</ion-card-subtitle>
+      </ion-card-header>
+      <ion-card-content>
+        <div class="menu-grid">
+          <ion-button expand="block" color="medium" (click)="changeRole('guest')">
+            <ion-icon name="people-outline" slot="start"></ion-icon>
+            Guest (Default)
+          </ion-button>
+
+          <ion-button expand="block" color="success" (click)="changeRole('visitor')">
+            <ion-icon name="qr-code-outline" slot="start"></ion-icon>
+            Visitor (My Pass)
+          </ion-button>
+
+          <ion-button expand="block" color="primary" (click)="changeRole('host')">
+            <ion-icon name="briefcase-outline" slot="start"></ion-icon>
+            Host (Teacher)
+          </ion-button>
+          
+          <ion-button expand="block" color="warning" (click)="changeRole('guard')">
+            <ion-icon name="shield-checkmark-outline" slot="start"></ion-icon>
+            Guard
+          </ion-button>
+        </div>
+      </ion-card-content>
+    </ion-card>
   </div>
 
 

@@ -1,11 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { 
-  IonContent, IonHeader, IonTitle, IonToolbar, IonList, IonItem, 
-  IonIcon, IonLabel, IonAvatar, IonButton, IonSelect, IonSelectOption,
-  IonCard, IonCardContent, ModalController, IonButtons, IonInput, IonSpinner // เพิ่ม IonSpinner
-} from '@ionic/angular/standalone';
+import { IonContent, IonHeader, IonTitle, IonToolbar, IonList, IonItem, IonIcon, IonLabel, IonAvatar, IonButton, IonSelect, IonSelectOption, IonCard, IonCardContent, ModalController, IonButtons, IonInput, IonSpinner // เพิ่ม IonSpinner
+, IonCardHeader, IonCardTitle, IonCardSubtitle } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { 
   personOutline, settingsOutline, logOutOutline, 
@@ -19,12 +16,12 @@ import { LineService } from '../services/line.service'; // 1. Import Service
   templateUrl: './profile.page.html',
   styleUrls: ['./profile.page.scss'],
   standalone: true,
-  imports: [IonButtons,
+  imports: [IonCardSubtitle, IonCardTitle, IonButtons,
     CommonModule, FormsModule,
     IonContent, IonHeader, IonTitle, IonToolbar, IonList, IonItem,
     IonIcon, IonLabel, IonAvatar, IonButton, IonSelect, IonSelectOption,
     IonCard, IonCardContent, IonInput, IonSpinner // เพิ่ม IonSpinner
-  ]
+    , IonCardHeader]
 })
 // Profile Page
 export class ProfilePage implements OnInit {
@@ -142,5 +139,26 @@ export class ProfilePage implements OnInit {
     this.inviteCode = '';
     this.visitorProfile = null;
     this.lineProfile = null; // เคลียร์โปรไฟล์ LINE
+  }
+
+  // ฟังก์ชันกดปุ่ม
+  async changeRole(roleName: string) {
+    // โชว์ Loading นิดนึง
+    this.isLiffLoading = true;
+    
+    // เรียก Service สั่งเปลี่ยนเมนู
+    const success = await this.lineService.switchMenu(roleName);
+    
+    this.isLiffLoading = false;
+
+    if (success) {
+      // แจ้งเตือน user
+      alert(`เปลี่ยนเมนูเป็น ${roleName} แล้ว! (ปิดหน้านี้เพื่อดูผล)`);
+      
+      // ปิดหน้า LIFF ให้อัตโนมัติ User จะได้เห็นเมนูใหม่ทันที
+      this.lineService.closeWindow();
+    } else {
+      alert('เกิดข้อผิดพลาดในการเปลี่ยนเมนู');
+    }
   }
 }
