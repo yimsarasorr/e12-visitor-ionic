@@ -16,12 +16,11 @@ serve(async (req) => {
     // 1. รับค่าจาก Ionic (userId และ role)
     const { userId, role } = await req.json()
 
-    // 2. ⚠️ แก้ ID ให้เป็นของจริงที่คุณมี ⚠️
     const MENU_IDS: Record<string, string> = {
-      guest: "richmenu-10c033c70800e7b5ffb2059483df051c",
-      visitor: "richmenu-0a60588ed403b1bd572c34b18cece5f8", 
-      // host: "richmenu-zzzzzz...",
-      // guard: "richmenu-aaaaaa...",
+      guest: "richmenu-efbe91a32be188d3bf7f812510c2bb3e",
+      visitor: "richmenu-8bc2c7db0ba30832b49b597db427a3fe", 
+      host: "richmenu-441b9d6f2f5b7b6fbbb3d6ac3ac237bf",
+      user: "richmenu-837fbb011d98c886ebaf26fad99b9e8c"
     }
 
     // เลือก Menu ID ตาม Role ที่ส่งมา (ถ้าไม่เจอให้ใช้ guest เป็นค่าเริ่มต้น)
