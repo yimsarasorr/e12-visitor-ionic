@@ -16,9 +16,9 @@ import { closeOutline, personOutline, businessOutline, callOutline, checkmarkCir
   styleUrls: ['./visitor-registration-modal.component.scss'],
   imports: [
     CommonModule, FormsModule,
-    IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonButton, 
-    IonIcon, IonItem, IonLabel, IonInput, IonNote, IonSpinner
-  ]
+    IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonButton,
+    IonIcon, IonItem, IonInput, IonSpinner
+]
 })
 export class VisitorRegistrationModalComponent implements OnInit {
   

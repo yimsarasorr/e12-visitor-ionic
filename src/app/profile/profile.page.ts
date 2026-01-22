@@ -1,80 +1,77 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonContent, IonHeader, IonTitle, IonToolbar, IonList, IonItem, IonIcon, IonLabel, IonAvatar, IonButton, IonSelect, IonSelectOption, IonCard, IonCardContent, ModalController, IonButtons, IonInput, IonSpinner // เพิ่ม IonSpinner
-, IonCardHeader, IonCardTitle, IonCardSubtitle } from '@ionic/angular/standalone';
+import { 
+  IonContent, IonHeader, IonTitle, IonToolbar, IonList, IonItem, 
+  IonIcon, IonLabel, IonAvatar, IonButton, IonSelect, IonSelectOption, 
+  IonCard, IonCardContent, ModalController, IonButtons, IonInput, 
+  IonSpinner, IonCardHeader, IonCardTitle, 
+  LoadingController // ✅ 1. เพิ่ม LoadingController
+} from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { 
   personOutline, settingsOutline, logOutOutline, 
-  qrCodeOutline, shieldCheckmarkOutline, arrowForwardOutline 
+  qrCodeOutline, shieldCheckmarkOutline, arrowForwardOutline,
+  peopleOutline, briefcaseOutline // ✅ (Optional) เพิ่มไอคอนสำหรับปุ่มเมนูใหม่
 } from 'ionicons/icons';
 import { VisitorRegistrationModalComponent } from '../components/ui/visitor-registration-modal/visitor-registration-modal.component';
-import { LineService } from '../services/line.service'; // 1. Import Service
+import { LineService } from '../services/line.service';
 
 @Component({
   selector: 'app-profile',
   templateUrl: './profile.page.html',
   styleUrls: ['./profile.page.scss'],
   standalone: true,
-  imports: [IonCardSubtitle, IonCardTitle, IonButtons,
-    CommonModule, FormsModule,
+  imports: [
+    IonCardTitle, IonButtons, CommonModule, FormsModule,
     IonContent, IonHeader, IonTitle, IonToolbar, IonList, IonItem,
     IonIcon, IonLabel, IonAvatar, IonButton, IonSelect, IonSelectOption,
-    IonCard, IonCardContent, IonInput, IonSpinner // เพิ่ม IonSpinner
-    , IonCardHeader]
+    IonCard, IonCardContent, IonInput, IonCardHeader
+  ]
 })
-// Profile Page
 export class ProfilePage implements OnInit {
 
-  // Role จำลอง: 'user' (เจ้าของตึก), 'guest' (คนนอกที่เพิ่งโหลดแอป), 'visitor' (คนนอกที่ลงทะเบียนแล้ว)
   currentRole: string = 'user'; 
-  
   inviteCode: string = '';
   visitorProfile: any = null;
-
-  // ตัวแปรเช็คสถานะการโหลด LIFF
   isLiffLoading = false;
   lineProfile: any = null;
 
   constructor(
     private modalCtrl: ModalController,
-    private lineService: LineService // 2. Inject Service
+    private lineService: LineService,
+    private loadingCtrl: LoadingController // ✅ 2. Inject LoadingController
   ) { 
-    addIcons({ personOutline, settingsOutline, logOutOutline, qrCodeOutline, shieldCheckmarkOutline, arrowForwardOutline });
+    // เพิ่ม icon ให้ครบตามที่ HTML ใช้อาจจะดีครับ
+    addIcons({ 
+      personOutline, settingsOutline, logOutOutline, 
+      qrCodeOutline, shieldCheckmarkOutline, arrowForwardOutline,
+      peopleOutline, briefcaseOutline 
+    });
   }
 
   async ngOnInit() {
-    // เริ่มเช็ค LIFF ทันทีที่เข้าหน้า Profile
-    await this.checkLineContext(); // เพิ่ม await
+    await this.checkLineContext();
   }
 
   async checkLineContext() {
     this.isLiffLoading = true;
-
-    // Init LIFF
     await this.lineService.initLiff();
-
-    // ดึง Invite Code จาก URL (?code=...) ทำงานได้ทั้ง LINE และ Browser
+    
     const codeFromUrl = this.lineService.getInviteCodeFromUrl();
 
-    // เช็คว่าเปิดใน LINE จริงไหม?
     if (this.lineService.isInClient()) {
       console.log('📱 Running inside LINE App');
-
-      // ดึงข้อมูล User (Binding LINE ID)
       this.lineProfile = await this.lineService.getProfile();
 
       if (codeFromUrl) {
-        // CASE A: มี Code -> เข้าโหมด Guest และเปิดลงทะเบียน
         this.handleGuestFlow(codeFromUrl);
       } else {
-        // CASE B: ไม่มี Code -> สมมติเป็น Visitor ที่เข้าดูบัตร
         this.currentRole = 'visitor';
         this.mockVisitorDataFromLine();
       }
     } else {
       console.log('💻 Running in Browser');
-      // Browser ก็จำลองด้วย ?code=... ได้
       if (codeFromUrl) {
         this.handleGuestFlow(codeFromUrl);
       }
@@ -83,19 +80,15 @@ export class ProfilePage implements OnInit {
     this.isLiffLoading = false;
   }
 
-  // แยก Logic การเข้าโหมด Guest
   handleGuestFlow(code: string) {
     console.log('🎫 Found Invite Code:', code);
     this.currentRole = 'guest';
     this.inviteCode = code;
-
-    // Auto-open Modal (รอ UI Render เล็กน้อย)
     setTimeout(() => {
       this.verifyInviteCode();
     }, 500);
   }
 
-  // สร้างข้อมูล Visitor จำลองจาก LINE Profile
   mockVisitorDataFromLine() {
     if (this.lineProfile) {
       this.visitorProfile = {
@@ -107,58 +100,58 @@ export class ProfilePage implements OnInit {
     }
   }
 
-  // ฟังก์ชันกดปุ่ม "ตรวจสอบ Code"
   async verifyInviteCode() {
     if (!this.inviteCode) return;
-
-    // เปิด Modal ให้กรอกข้อมูลต่อ
     const modal = await this.modalCtrl.create({
       component: VisitorRegistrationModalComponent,
       componentProps: {
         code: this.inviteCode,
-        // ส่งข้อมูล LINE Profile เข้าไปใน Modal ด้วย
         lineData: this.lineProfile
       }
     });
 
     await modal.present();
 
-    // รอรับผลลัพธ์เมื่อ Modal ปิด
     const { data } = await modal.onWillDismiss();
-    
     if (data?.registered) {
-      // เปลี่ยนสถานะเป็น Visitor เต็มตัว
       this.currentRole = 'visitor';
       this.visitorProfile = data.visitorData;
     }
   }
 
-  // Mock Reset กลับไปเป็น Guest (เผื่อกดเล่น)
   resetToGuest() {
     this.currentRole = 'guest';
     this.inviteCode = '';
     this.visitorProfile = null;
-    this.lineProfile = null; // เคลียร์โปรไฟล์ LINE
+    this.lineProfile = null;
   }
 
-  // ฟังก์ชันกดปุ่ม
+  // ✅ 3. ฟังก์ชัน changeRole ที่หายไป (ใส่ไว้ท้ายสุดก่อนปิด Class)
   async changeRole(roleName: string) {
-    // โชว์ Loading นิดนึง
-    this.isLiffLoading = true;
-    
-    // เรียก Service สั่งเปลี่ยนเมนู
-    const success = await this.lineService.switchMenu(roleName);
-    
-    this.isLiffLoading = false;
+    // แสดง Loading
+    const loading = await this.loadingCtrl.create({
+      message: `กำลังเปลี่ยนเมนูเป็น ${roleName}...`,
+      duration: 3000
+    });
+    await loading.present();
 
-    if (success) {
-      // แจ้งเตือน user
-      alert(`เปลี่ยนเมนูเป็น ${roleName} แล้ว! (ปิดหน้านี้เพื่อดูผล)`);
+    try {
+      // เรียก Service ยิงไป Supabase
+      const success = await this.lineService.switchMenu(roleName);
       
-      // ปิดหน้า LIFF ให้อัตโนมัติ User จะได้เห็นเมนูใหม่ทันที
-      this.lineService.closeWindow();
-    } else {
-      alert('เกิดข้อผิดพลาดในการเปลี่ยนเมนู');
+      await loading.dismiss();
+
+      if (success) {
+        // ถ้าสำเร็จ ปิดหน้า LIFF เพื่อให้ User เห็นเมนูใหม่
+        this.lineService.closeWindow();
+      } else {
+        alert('เปลี่ยนเมนูไม่สำเร็จ กรุณาลองใหม่');
+      }
+    } catch (error) {
+      await loading.dismiss();
+      console.error('Change Role Error:', error);
+      alert('เกิดข้อผิดพลาด: ' + JSON.stringify(error));
     }
   }
+
 }
