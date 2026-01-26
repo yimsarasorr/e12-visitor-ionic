@@ -3,155 +3,181 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { 
   IonContent, IonHeader, IonTitle, IonToolbar, IonList, IonItem, 
-  IonIcon, IonLabel, IonAvatar, IonButton, IonSelect, IonSelectOption, 
-  IonCard, IonCardContent, ModalController, IonButtons, IonInput, 
-  IonSpinner, IonCardHeader, IonCardTitle, 
-  LoadingController // ✅ 1. เพิ่ม LoadingController
-} from '@ionic/angular/standalone';
+  IonIcon, IonLabel, IonAvatar, IonButton, IonCard, IonCardContent, 
+  IonBadge, IonCardHeader, IonCardSubtitle, IonNote, 
+  ModalController, LoadingController, AlertController, IonButtons } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { 
-  personOutline, settingsOutline, logOutOutline, 
-  qrCodeOutline, shieldCheckmarkOutline, arrowForwardOutline,
-  peopleOutline, briefcaseOutline // ✅ (Optional) เพิ่มไอคอนสำหรับปุ่มเมนูใหม่
-} from 'ionicons/icons';
-import { VisitorRegistrationModalComponent } from '../components/ui/visitor-registration-modal/visitor-registration-modal.component';
+import { peopleOutline, schoolOutline, logOutOutline, cardOutline } from 'ionicons/icons';
+
+// Import Services
 import { LineService } from '../services/line.service';
+import { AuthService } from '../services/auth.service';
+// Import Components
+import { VisitorRegistrationModalComponent } from '../components/ui/visitor-registration-modal/visitor-registration-modal.component';
 
 @Component({
   selector: 'app-profile',
   templateUrl: './profile.page.html',
   styleUrls: ['./profile.page.scss'],
   standalone: true,
-  imports: [
-    IonCardTitle, IonButtons, CommonModule, FormsModule,
-    IonContent, IonHeader, IonTitle, IonToolbar, IonList, IonItem,
-    IonIcon, IonLabel, IonAvatar, IonButton, IonSelect, IonSelectOption,
-    IonCard, IonCardContent, IonInput, IonCardHeader
+  imports: [IonButtons, 
+    CommonModule, FormsModule, IonContent, IonHeader, IonTitle, IonToolbar, 
+    IonList, IonItem, IonIcon, IonLabel, IonAvatar, IonButton, IonCard, 
+    IonCardContent, IonBadge, IonCardHeader, IonCardSubtitle, IonNote
   ]
 })
 export class ProfilePage implements OnInit {
 
-  currentRole: string = 'user'; 
-  inviteCode: string = '';
-  visitorProfile: any = null;
-  isLiffLoading = false;
+  currentRole: string = 'guest'; // default
   lineProfile: any = null;
+  isLiffLoading = false;
 
   constructor(
-    private modalCtrl: ModalController,
     private lineService: LineService,
-    private loadingCtrl: LoadingController // ✅ 2. Inject LoadingController
+    private authService: AuthService,
+    private modalCtrl: ModalController,
+    private loadingCtrl: LoadingController,
+    private alertCtrl: AlertController
   ) { 
-    // เพิ่ม icon ให้ครบตามที่ HTML ใช้อาจจะดีครับ
-    addIcons({ 
-      personOutline, settingsOutline, logOutOutline, 
-      qrCodeOutline, shieldCheckmarkOutline, arrowForwardOutline,
-      peopleOutline, briefcaseOutline 
-    });
+    addIcons({ peopleOutline, schoolOutline, logOutOutline, cardOutline });
   }
 
   async ngOnInit() {
-    await this.checkLineContext();
+    await this.initData();
   }
 
-  async checkLineContext() {
+  async initData() {
     this.isLiffLoading = true;
+    // 1. Init LIFF
     await this.lineService.initLiff();
     
-    const codeFromUrl = this.lineService.getInviteCodeFromUrl();
-
     if (this.lineService.isInClient()) {
-      console.log('📱 Running inside LINE App');
+      // 2. ดึง Profile จาก LINE
       this.lineProfile = await this.lineService.getProfile();
-
-      if (codeFromUrl) {
-        this.handleGuestFlow(codeFromUrl);
-      } else {
-        this.currentRole = 'visitor';
-        this.mockVisitorDataFromLine();
+      
+      if (this.lineProfile) {
+        // 3. Sync กับ Database เพื่อดู Role ปัจจุบัน
+        // (AuthService ที่เราแก้แล้ว จะเช็คให้ว่ามี user ไหม ถ้าไม่มีก็สร้างให้เป็น guest)
+        const dbUser = await this.authService.syncLineProfile(this.lineProfile);
+        
+        if (dbUser) {
+          this.currentRole = dbUser.role; // อัปเดต Role ตาม DB
+          console.log('✅ Current Role form DB:', this.currentRole);
+        }
       }
     } else {
       console.log('💻 Running in Browser');
-      if (codeFromUrl) {
-        this.handleGuestFlow(codeFromUrl);
-      }
+      // Mock data for browser testing
+      this.lineProfile = { displayName: 'Browser Test', pictureUrl: '', userId: 'test_browser' };
     }
-
     this.isLiffLoading = false;
   }
 
-  handleGuestFlow(code: string) {
-    console.log('🎫 Found Invite Code:', code);
-    this.currentRole = 'guest';
-    this.inviteCode = code;
-    setTimeout(() => {
-      this.verifyInviteCode();
-    }, 500);
-  }
-
-  mockVisitorDataFromLine() {
-    if (this.lineProfile) {
-      this.visitorProfile = {
-        firstName: this.lineProfile.displayName,
-        lastName: '(LINE)',
-        company: 'Via LINE App',
-        pictureUrl: this.lineProfile.pictureUrl
-      };
-    }
-  }
-
-  async verifyInviteCode() {
-    if (!this.inviteCode) return;
+  // --- 🟢 Flow 1: Visitor Register ---
+  async openVisitorRegister() {
     const modal = await this.modalCtrl.create({
       component: VisitorRegistrationModalComponent,
-      componentProps: {
-        code: this.inviteCode,
-        lineData: this.lineProfile
-      }
+      componentProps: { lineData: this.lineProfile }
     });
-
     await modal.present();
 
     const { data } = await modal.onWillDismiss();
+    
+    // ถ้าลงทะเบียนสำเร็จ (กด Submit ใน Modal)
     if (data?.registered) {
-      this.currentRole = 'visitor';
-      this.visitorProfile = data.visitorData;
+      await this.confirmRoleChange('visitor', data.visitorData);
     }
   }
 
-  resetToGuest() {
-    this.currentRole = 'guest';
-    this.inviteCode = '';
-    this.visitorProfile = null;
-    this.lineProfile = null;
+  // --- 🟠 Flow 2: KMITL Login (Mock) ---
+  async openKmitlLogin() {
+    const alert = await this.alertCtrl.create({
+      header: 'KMITL SSO Login',
+      message: 'จำลองระบบ Login (กรอกรหัสนักศึกษา)',
+      inputs: [
+        { name: 'username', type: 'text', placeholder: 'รหัสนักศึกษา / บุคลากร' },
+        { name: 'password', type: 'password', placeholder: 'รหัสผ่าน' }
+      ],
+      buttons: [
+        { text: 'ยกเลิก', role: 'cancel' },
+        {
+          text: 'เข้าสู่ระบบ',
+          handler: (data) => {
+            if (data.username && data.password) {
+              this.processKmitlLogin(data.username);
+            }
+          }
+        }
+      ]
+    });
+    await alert.present();
   }
 
-  // ✅ 3. ฟังก์ชัน changeRole ที่หายไป (ใส่ไว้ท้ายสุดก่อนปิด Class)
-  async changeRole(roleName: string) {
-    // แสดง Loading
-    const loading = await this.loadingCtrl.create({
-      message: `กำลังเปลี่ยนเมนูเป็น ${roleName}...`,
-      duration: 3000
-    });
+  async processKmitlLogin(username: string) {
+    // Logic จำลอง: รหัสขึ้นต้นด้วย '6' = นักศึกษา (User), '9' = อาจารย์ (Host)
+    let newRole = 'user'; 
+    if (username.startsWith('9')) newRole = 'host';
+
+    const extraData = {
+      // ตรงนี้อาจจะเป็น student_id หรือ field อื่นๆ ที่คุณเพิ่มใน table profiles
+      department: 'Engineering'
+    };
+
+    await this.confirmRoleChange(newRole, extraData);
+  }
+
+  // --- 🔄 Shared Logic: บันทึก Role และเปลี่ยนเมนู ---
+  async confirmRoleChange(newRole: string, extraData: any) {
+    const loading = await this.loadingCtrl.create({ message: 'กำลังบันทึกข้อมูล...' });
     await loading.present();
 
     try {
-      // เรียก Service ยิงไป Supabase
-      const success = await this.lineService.switchMenu(roleName);
+      // 1. อัปเดต DB
+      const updateData = { role: newRole, ...extraData };
+      if (this.lineProfile?.userId) {
+         await this.authService.updateProfile(this.lineProfile.userId, updateData);
+      }
+
+      // 2. สั่งเปลี่ยน Rich Menu
+      await this.lineService.switchMenu(newRole);
+
+      // 3. อัปเดตหน้าจอ
+      this.currentRole = newRole;
       
       await loading.dismiss();
+      
+      const successAlert = await this.alertCtrl.create({
+        header: 'ลงทะเบียนสำเร็จ',
+        message: `คุณได้รับสิทธิ์: ${newRole.toUpperCase()} เรียบร้อยแล้ว`,
+        buttons: ['ตกลง']
+      });
+      await successAlert.present();
+      
+      // ปิดหน้า LIFF ให้อัตโนมัติ เพื่อให้ User เห็นเมนูใหม่
+      // this.lineService.closeWindow(); 
 
-      if (success) {
-        // ถ้าสำเร็จ ปิดหน้า LIFF เพื่อให้ User เห็นเมนูใหม่
-        this.lineService.closeWindow();
-      } else {
-        alert('เปลี่ยนเมนูไม่สำเร็จ กรุณาลองใหม่');
-      }
     } catch (error) {
       await loading.dismiss();
-      console.error('Change Role Error:', error);
+      console.error(error);
       alert('เกิดข้อผิดพลาด: ' + JSON.stringify(error));
     }
   }
 
+  // Helper สำหรับปุ่ม Reset
+  async changeRole(role: string) {
+     await this.confirmRoleChange(role, {});
+  }
+  
+  logout() {
+    this.lineService.logout();
+  }
+
+  getRoleColor(role: string) {
+    switch (role) {
+      case 'visitor': return 'success';
+      case 'host': return 'primary';
+      case 'user': return 'tertiary';
+      default: return 'medium';
+    }
+  }
 }
