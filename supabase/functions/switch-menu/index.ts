@@ -7,13 +7,11 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS (เพื่อให้เรียกจากหน้าเว็บ Ionic ได้)
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // 1. รับค่าจาก Ionic (userId และ role)
     const { userId, role } = await req.json()
 
     const MENU_IDS: Record<string, string> = {
@@ -23,12 +21,10 @@ serve(async (req) => {
       user: "richmenu-837fbb011d98c886ebaf26fad99b9e8c"
     }
 
-    // เลือก Menu ID ตาม Role ที่ส่งมา (ถ้าไม่เจอให้ใช้ guest เป็นค่าเริ่มต้น)
     const targetMenuId = MENU_IDS[role] || MENU_IDS['guest']
 
     console.log(`Switching menu for ${userId} to ${role} (${targetMenuId})`)
 
-    // 3. เตรียมยิงบอก LINE Server
     const channelAccessToken = Deno.env.get('LINE_CHANNEL_ACCESS_TOKEN')
     
     if (!channelAccessToken) {
@@ -37,7 +33,6 @@ serve(async (req) => {
 
     const url = `https://api.line.me/v2/bot/user/${userId}/richmenu/${targetMenuId}`
 
-    // 4. ยิง API ไปที่ LINE
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -52,7 +47,6 @@ serve(async (req) => {
       throw new Error(`Failed to change menu: ${response.status}`)
     }
 
-    // 5. ส่งผลลัพธ์กลับไปบอก Ionic
     return new Response(
       JSON.stringify({ success: true, message: `Menu changed to ${role}` }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
