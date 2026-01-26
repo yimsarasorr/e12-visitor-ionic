@@ -83,9 +83,18 @@ export class ProfilePage implements OnInit {
 
     const { data } = await modal.onWillDismiss();
     
-    // ถ้าลงทะเบียนสำเร็จ (กด Submit ใน Modal)
     if (data?.registered) {
-      await this.confirmRoleChange('visitor', data.visitorData);
+      const visitorForm = data.visitorData;
+
+      const dbPayload = {
+        full_name: `${visitorForm.firstName} ${visitorForm.lastName}`,
+        phone_number: visitorForm.phone,
+        company: visitorForm.company,
+        email: visitorForm.email,
+        role: 'visitor'
+      };
+
+      await this.confirmRoleChange('visitor', dbPayload);
     }
   }
 
