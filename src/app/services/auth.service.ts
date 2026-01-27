@@ -48,7 +48,7 @@ export class AuthService {
       if (existingUser) {
         // 1.2 ถ้ามี: อัปเดตข้อมูลล่าสุด (ชื่อ/รูป)
         await this.supabase.from('profiles').update({
-          display_name: lineProfile.displayName,
+          full_name: lineProfile.displayName,
           picture_url: lineProfile.pictureUrl
         }).eq('id', existingUser.id);
         
@@ -60,7 +60,7 @@ export class AuthService {
         .from('profiles')
         .insert({
           line_user_id: lineProfile.userId,
-          display_name: lineProfile.displayName,
+          full_name: lineProfile.displayName,
           picture_url: lineProfile.pictureUrl,
           role: 'guest'
         })

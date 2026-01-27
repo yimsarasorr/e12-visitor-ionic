@@ -63,9 +63,8 @@ export class VisitorRegistrationModalComponent implements OnInit {
     this.isLoading = true;
     try {
       const updateData = {
-        first_name: this.formData.firstName,
-        last_name: this.formData.lastName,
-        phone: this.formData.phone,
+        full_name: `${this.formData.firstName} ${this.formData.lastName}`, // รวมชื่อ-นามสกุล
+        phone_number: this.formData.phone, // ใช้ phone_number ให้ตรงกับ DB
         company: this.formData.company,
         role: 'visitor',
         updated_at: new Date()
