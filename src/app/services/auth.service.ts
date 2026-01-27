@@ -94,6 +94,14 @@ export class AuthService {
     }
   }
 
+  async changeRichMenu(userId: string, newRole: string) {
+    const { data, error } = await this.supabase.functions.invoke('switch-menu', {
+      body: { userId, role: newRole }
+    });
+    if (error) throw error;
+    return data;
+  }
+
   // ==========================================
   // 🟡 Logic เช็คสิทธิ์ประตู 
   // ==========================================
