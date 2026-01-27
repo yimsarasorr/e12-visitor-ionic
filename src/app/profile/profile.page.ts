@@ -48,27 +48,38 @@ export class ProfilePage implements OnInit {
 
   async initData() {
     this.isLiffLoading = true;
-    // 1. Init LIFF
     await this.lineService.initLiff();
     
     if (this.lineService.isInClient()) {
-      // 2. ดึง Profile จาก LINE
+      // 📱 กรณีเปิดใน LINE
+      console.log('📱 Running inside LINE App');
       this.lineProfile = await this.lineService.getProfile();
       
       if (this.lineProfile) {
-        // 3. Sync กับ Database เพื่อดู Role ปัจจุบัน
-        // (AuthService ที่เราแก้แล้ว จะเช็คให้ว่ามี user ไหม ถ้าไม่มีก็สร้างให้เป็น guest)
         const dbUser = await this.authService.syncLineProfile(this.lineProfile);
-        
         if (dbUser) {
-          this.currentRole = dbUser.role; // อัปเดต Role ตาม DB
+          this.currentRole = dbUser.role;
           console.log('✅ Current Role form DB:', this.currentRole);
         }
       }
     } else {
+      // 💻 กรณีเปิดใน Browser (เพิ่มการ Sync)
       console.log('💻 Running in Browser');
-      // Mock data for browser testing
-      this.lineProfile = { displayName: 'Browser Test', pictureUrl: '', userId: 'test_browser' };
+      
+      // 1. สร้าง Mock Data
+      this.lineProfile = { 
+        displayName: 'Browser Test', 
+        pictureUrl: '', 
+        userId: 'test_browser' 
+      };
+
+      // ✅ 2. เพิ่มบรรทัดนี้: สั่งให้ Sync ลง Database ด้วย!
+      const dbUser = await this.authService.syncLineProfile(this.lineProfile);
+      
+      if (dbUser) {
+        this.currentRole = dbUser.role;
+        console.log('✅ (Mock) Current Role form DB:', this.currentRole);
+      }
     }
     this.isLiffLoading = false;
   }
