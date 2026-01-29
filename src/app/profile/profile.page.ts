@@ -190,7 +190,7 @@ export class ProfilePage implements OnInit {
     this.lineService.logout();
   }
 
-  getRoleColor(role: string) {
+  getRoleColor(role: string): string {
     switch (role) {
       case 'visitor': return 'success';
       case 'host': return 'primary';
@@ -200,7 +200,7 @@ export class ProfilePage implements OnInit {
   }
 
   // ✅ ฟังก์ชันทดสอบเปลี่ยนเมนู (Debug)
-  async debugSwitchRole(role: string) {
+  async debugSwitchRole(role: string): Promise<void> {
     const loading = await this.loadingCtrl.create({ message: `Switching to ${role}...` });
     await loading.present();
 
@@ -232,7 +232,7 @@ export class ProfilePage implements OnInit {
   }
 
   // ฟังก์ชันเปิด LINE OA
-  openLineOA() {
+  openLineOA(): void {
     const link = this.lineService.getLineOALink();
     window.open(link, '_system');
   }

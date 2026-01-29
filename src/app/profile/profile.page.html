@@ -78,37 +78,20 @@
     </ion-card>
 
     <!-- 🔧 Developer Zone (Test Menu) -->
-    <ion-card class="ion-margin-top" style="border: 1px dashed red">
+    <ion-card class="ion-margin-top" style="border: 1px dashed red;">
       <ion-card-header>
-        <ion-card-subtitle style="color: red">Test Menu</ion-card-subtitle>
+        <ion-card-subtitle style="color: red;">Test Menu</ion-card-subtitle>
       </ion-card-header>
       <ion-card-content>
-        <p class="ion-margin-bottom">บังคับเปลี่ยน Rich Menu</p>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px">
-          <ion-button
-            color="medium"
-            expand="block"
-            (click)="debugSwitchRole('guest')"
-            >Force Guest</ion-button
-          >
-          <ion-button
-            color="success"
-            expand="block"
-            (click)="debugSwitchRole('visitor')"
-            >Force Visitor</ion-button
-          >
-          <ion-button
-            color="primary"
-            expand="block"
-            (click)="debugSwitchRole('host')"
-            >Force Host</ion-button
-          >
-          <ion-button
-            color="tertiary"
-            expand="block"
-            (click)="debugSwitchRole('user')"
-            >Force User</ion-button
-          >
+        <p class="ion-margin-bottom">Tools สำหรับทดสอบเปลี่ยน Rich Menu</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <ion-button color="dark" expand="block" (click)="openLineOA()">
+            <ion-icon name="chatbubbles-outline" slot="start"></ion-icon>
+            Back to OA
+          </ion-button>
+          <ion-button color="success" expand="block" (click)="debugSwitchRole('visitor')">Force Visitor</ion-button>
+          <ion-button color="primary" expand="block" (click)="debugSwitchRole('host')">Force Host</ion-button>
+          <ion-button color="tertiary" expand="block" (click)="debugSwitchRole('user')">Force User</ion-button>
         </div>
       </ion-card-content>
     </ion-card>

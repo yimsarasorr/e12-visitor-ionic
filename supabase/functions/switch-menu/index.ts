@@ -17,7 +17,7 @@ serve(async (req) => {
     const MENU_IDS: Record<string, string> = {
       guest: "richmenu-b385e9a15da827b7a5183ba9f2423b8d",
       visitor: "richmenu-2b37d4a1e18193a51580bed45e9dfb28", 
-      host: "richmenu-9617cdca8e596ce2becb3c29ccc67653",
+      host: "richmenu-5024f435bb8ef2f1a67f31bfc657deb4",
       user: "richmenu-ce44eafa7924d65357236b8f81f2be45"
     }
 
