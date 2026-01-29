@@ -16,10 +16,10 @@ export class LineService {
 
   async initLiff() {
     try {
-      await liff.init({ liffId: this.LIFF_ID });
-      if (!liff.isLoggedIn()) {
-        liff.login();
-      }
+      await liff.init({ 
+        liffId: this.LIFF_ID,
+        withLoginOnExternalBrowser: true
+      });
     } catch (error) {
       console.error('LIFF Init Error:', error);
     }
@@ -47,12 +47,13 @@ export class LineService {
   // ✅ เพิ่ม Switch Menu
   async switchMenu(role: string) {
     try {
+      // ถ้าเปิดใน Browser แล้วยัง Login ไม่เสร็จ ให้หยุดทำงานก่อน
       if (!liff.isLoggedIn()) {
         console.warn('User not logged in LIFF');
-        // ไม่ return ทันที เพื่อให้ทดสอบใน browser ได้ด้วย mock userId
+        return false;
       }
 
-      const profile = liff.isLoggedIn() ? await liff.getProfile() : { userId: 'test_browser' };
+      const profile = await liff.getProfile();
       const userId = profile.userId;
 
       console.log(`🔄 Switching menu to: ${role} for ${userId}`);
@@ -61,7 +62,6 @@ export class LineService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // ✅ ส่ง Supabase anon key ไปใน Authorization header
           'Authorization': `Bearer ${environment.supabaseKey}`
         },
         body: JSON.stringify({ userId, role })
