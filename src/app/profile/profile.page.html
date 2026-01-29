@@ -10,12 +10,10 @@
 </ion-header>
 
 <ion-content class="ion-padding">
-
   <div *ngIf="currentRole === 'guest'" class="guest-container ion-text-center">
-    
     <div class="welcome-box ion-margin-bottom">
       <ion-avatar class="profile-img-large">
-        <img [src]="lineProfile?.pictureUrl || 'assets/icon/favicon.png'">
+        <img [src]="lineProfile?.pictureUrl || 'assets/icon/favicon.png'" />
       </ion-avatar>
       <h2>สวัสดีคุณ {{ lineProfile?.displayName || 'Guest' }}</h2>
       <p class="ion-text-muted">กรุณาเลือกประเภทผู้ใช้งานเพื่อลงทะเบียน</p>
@@ -36,20 +34,23 @@
         <p>เข้าสู่ระบบด้วย KMITL Account</p>
       </ion-card-content>
     </ion-card>
-
   </div>
 
   <div *ngIf="currentRole !== 'guest'">
-    
     <ion-card class="profile-card">
       <ion-card-header>
         <ion-item lines="none">
           <ion-avatar slot="start">
-            <img [src]="lineProfile?.pictureUrl">
+            <img [src]="lineProfile?.pictureUrl" />
           </ion-avatar>
           <ion-label>
             <h2>{{ lineProfile?.displayName }}</h2>
-            <p>สถานะ: <ion-badge [color]="getRoleColor(currentRole)">{{ currentRole | uppercase }}</ion-badge></p>
+            <p>
+              สถานะ:
+              <ion-badge [color]="getRoleColor(currentRole)"
+                >{{ currentRole | uppercase }}</ion-badge
+              >
+            </p>
           </ion-label>
         </ion-item>
       </ion-card-header>
@@ -69,28 +70,47 @@
         <ion-card-subtitle>Developer Tools</ion-card-subtitle>
       </ion-card-header>
       <ion-card-content>
-        <ion-button expand="block" color="medium" (click)="changeRole('guest')">
-          Reset to Guest
+        <ion-button color="dark" expand="block" (click)="openLineOA()">
+          <ion-icon name="chatbubbles-outline" slot="start"></ion-icon>
+          LINE OA
         </ion-button>
       </ion-card-content>
     </ion-card>
 
     <!-- 🔧 Developer Zone (Test Menu) -->
-    <ion-card class="ion-margin-top" style="border: 1px dashed red;">
+    <ion-card class="ion-margin-top" style="border: 1px dashed red">
       <ion-card-header>
-        <ion-card-subtitle style="color: red;">Test Menu</ion-card-subtitle>
+        <ion-card-subtitle style="color: red">Test Menu</ion-card-subtitle>
       </ion-card-header>
       <ion-card-content>
-        <p class="ion-margin-bottom">บังคับเปลี่ยน Rich Menu </p>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-          <ion-button color="medium" expand="block" (click)="debugSwitchRole('guest')">Force Guest</ion-button>
-          <ion-button color="success" expand="block" (click)="debugSwitchRole('visitor')">Force Visitor</ion-button>
-          <ion-button color="primary" expand="block" (click)="debugSwitchRole('host')">Force Host</ion-button>
-          <ion-button color="tertiary" expand="block" (click)="debugSwitchRole('user')">Force User</ion-button>
+        <p class="ion-margin-bottom">บังคับเปลี่ยน Rich Menu</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px">
+          <ion-button
+            color="medium"
+            expand="block"
+            (click)="debugSwitchRole('guest')"
+            >Force Guest</ion-button
+          >
+          <ion-button
+            color="success"
+            expand="block"
+            (click)="debugSwitchRole('visitor')"
+            >Force Visitor</ion-button
+          >
+          <ion-button
+            color="primary"
+            expand="block"
+            (click)="debugSwitchRole('host')"
+            >Force Host</ion-button
+          >
+          <ion-button
+            color="tertiary"
+            expand="block"
+            (click)="debugSwitchRole('user')"
+            >Force User</ion-button
+          >
         </div>
       </ion-card-content>
     </ion-card>
-    
   </div>
-
 </ion-content>

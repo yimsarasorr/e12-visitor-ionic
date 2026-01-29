@@ -7,7 +7,7 @@ import {
   IonBadge, IonCardHeader, IonCardSubtitle, IonNote, 
   ModalController, LoadingController, AlertController, IonButtons } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { peopleOutline, schoolOutline, logOutOutline, cardOutline } from 'ionicons/icons';
+import { peopleOutline, schoolOutline, logOutOutline, cardOutline, chatbubblesOutline } from 'ionicons/icons';
 
 // Import Services
 import { LineService } from '../services/line.service';
@@ -39,7 +39,7 @@ export class ProfilePage implements OnInit {
     private loadingCtrl: LoadingController,
     private alertCtrl: AlertController
   ) { 
-    addIcons({ peopleOutline, schoolOutline, logOutOutline, cardOutline });
+    addIcons({logOutOutline,peopleOutline,schoolOutline,cardOutline,chatbubblesOutline});
   }
 
   async ngOnInit() {
@@ -229,5 +229,11 @@ export class ProfilePage implements OnInit {
     } finally {
       await loading.dismiss();
     }
+  }
+
+  // ฟังก์ชันเปิด LINE OA
+  openLineOA() {
+    const link = this.lineService.getLineOALink();
+    window.open(link, '_system');
   }
 }

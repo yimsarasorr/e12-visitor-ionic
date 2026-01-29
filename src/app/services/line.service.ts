@@ -92,4 +92,9 @@ export class LineService {
     const urlParams = new URLSearchParams(queryString);
     return urlParams.get('code');
   }
+
+  // ✅ ฟังก์ชันสร้าง Link กลับ LINE OA
+  getLineOALink(): string {
+    return `https://line.me/R/ti/p/${this.LINE_OA_ID}`;
+  }
 }
