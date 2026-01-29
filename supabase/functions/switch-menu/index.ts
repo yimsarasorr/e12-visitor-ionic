@@ -15,10 +15,10 @@ serve(async (req) => {
     const { userId, role } = await req.json()
 
     const MENU_IDS: Record<string, string> = {
-      guest: "richmenu-efbe91a32be188d3bf7f812510c2bb3e",
-      visitor: "richmenu-8bc2c7db0ba30832b49b597db427a3fe", 
-      host: "richmenu-441b9d6f2f5b7b6fbbb3d6ac3ac237bf",
-      user: "richmenu-837fbb011d98c886ebaf26fad99b9e8c"
+      guest: "richmenu-b385e9a15da827b7a5183ba9f2423b8d",
+      visitor: "richmenu-2b37d4a1e18193a51580bed45e9dfb28", 
+      host: "richmenu-9617cdca8e596ce2becb3c29ccc67653",
+      user: "richmenu-ce44eafa7924d65357236b8f81f2be45"
     }
 
     const targetMenuId = MENU_IDS[role] || MENU_IDS['guest']
