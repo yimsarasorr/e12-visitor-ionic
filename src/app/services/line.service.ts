@@ -20,6 +20,13 @@ export class LineService {
         liffId: this.LIFF_ID,
         withLoginOnExternalBrowser: true
       });
+
+      // ถ้ายังไม่ Login และอยู่ใน Browser ให้ redirect กลับ LIFF URL
+      if (!liff.isLoggedIn() && !liff.isInClient()) {
+        liff.login({
+          redirectUri: `https://liff.line.me/${this.LIFF_ID}/tabs/profile`
+        });
+      }
     } catch (error) {
       console.error('LIFF Init Error:', error);
     }
