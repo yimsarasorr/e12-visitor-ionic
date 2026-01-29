@@ -198,4 +198,36 @@ export class ProfilePage implements OnInit {
       default: return 'medium';
     }
   }
+
+  // ✅ ฟังก์ชันทดสอบเปลี่ยนเมนู (Debug)
+  async debugSwitchRole(role: string) {
+    const loading = await this.loadingCtrl.create({ message: `Switching to ${role}...` });
+    await loading.present();
+
+    try {
+      const success = await this.lineService.switchMenu(role);
+
+      if (success) {
+        this.currentRole = role;
+
+        if (this.lineProfile?.userId) {
+          await this.authService.updateProfile(this.lineProfile.userId, { role });
+        }
+
+        const alert = await this.alertCtrl.create({
+          header: 'Success',
+          message: `เปลี่ยนเมนูเป็น ${role} เรียบร้อย (กดปิดแล้วดูที่เมนูด้านล่าง)`,
+          buttons: ['OK']
+        });
+        await alert.present();
+      } else {
+        throw new Error('Call function failed');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('เปลี่ยนเมนูไม่สำเร็จ: ดู Log ใน Supabase');
+    } finally {
+      await loading.dismiss();
+    }
+  }
 }
