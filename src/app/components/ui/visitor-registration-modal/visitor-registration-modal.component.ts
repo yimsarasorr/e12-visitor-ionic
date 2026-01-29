@@ -7,7 +7,8 @@ import {
   IonSpinner
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { closeOutline, personOutline, businessOutline, callOutline, checkmarkCircleOutline } from 'ionicons/icons';
+// ✅ เพิ่ม mailOutline
+import { closeOutline, personOutline, businessOutline, callOutline, checkmarkCircleOutline, mailOutline } from 'ionicons/icons';
 import { AuthService } from 'src/app/services/auth.service';
 
 @Component({
@@ -27,7 +28,6 @@ export class VisitorRegistrationModalComponent implements OnInit {
   step: 'form' | 'success' = 'form';
   isLoading = false;
 
-  // Mock Data: สมมติว่า Host กรอกมาให้แค่นี้ (Visitor ต้องกรอกเพิ่มเอง)
   formData = {
     firstName: '',
     lastName: '',
@@ -40,13 +40,12 @@ export class VisitorRegistrationModalComponent implements OnInit {
     private modalCtrl: ModalController,
     private authService: AuthService
   ) {
-    addIcons({ closeOutline, personOutline, businessOutline, callOutline, checkmarkCircleOutline });
+    // ✅ เพิ่ม mailOutline
+    addIcons({ closeOutline, personOutline, businessOutline, callOutline, checkmarkCircleOutline, mailOutline });
   }
 
   ngOnInit() {
-    // สมมติ: ดึงข้อมูลบางส่วนจาก Invite Code (ถ้ามี)
-    // ในสถานการณ์จริง API จะ return ข้อมูลบางอย่างมาให้
-    this.formData.company = 'Partner Co., Ltd.'; // Host อาจจะระบุบริษัทมาแล้ว
+    this.formData.company = 'Partner Co., Ltd.';
     console.log('Current User ID:', this.currentUserId);
   }
 
@@ -57,6 +56,7 @@ export class VisitorRegistrationModalComponent implements OnInit {
   async submitRegistration() {
     if (!this.currentUserId) {
       console.error('ไม่พบ User ID ไม่สามารถบันทึกข้อมูลได้');
+      alert('ไม่พบข้อมูลผู้ใช้ กรุณาลองใหม่อีกครั้ง');
       return;
     }
 
@@ -64,26 +64,32 @@ export class VisitorRegistrationModalComponent implements OnInit {
     try {
       const updateData = {
         full_name: `${this.formData.firstName} ${this.formData.lastName}`, // รวมชื่อ-นามสกุล
-        phone_number: this.formData.phone, // ใช้ phone_number ให้ตรงกับ DB
+        phone_number: this.formData.phone, // ใช้ชื่อ column ให้ตรง DB
         company: this.formData.company,
+        email: this.formData.email, // ✅ เพิ่ม Email
         role: 'visitor',
         updated_at: new Date()
       };
 
+      // 1. บันทึกข้อมูลลง DB
       const profileResult = await this.authService.updateProfile(this.currentUserId, updateData);
       if (!profileResult) throw new Error('Update profile failed');
 
+      // 2. เปลี่ยน Rich Menu
       await this.authService.changeRichMenu(this.currentUserId, 'visitor');
+
+      // 3. เปลี่ยนสถานะหน้าจอ
       this.step = 'success';
+
     } catch (error) {
       console.error('Registration Error:', error);
+      alert('เกิดข้อผิดพลาด: ' + JSON.stringify(error));
     } finally {
       this.isLoading = false;
     }
   }
 
   finish() {
-    // ส่งข้อมูลกลับไปบอกหน้า Profile ว่าลงทะเบียนเสร็จแล้ว
     this.modalCtrl.dismiss({ 
       registered: true,
       visitorData: this.formData 

@@ -73,7 +73,7 @@ export class ProfilePage implements OnInit {
         userId: 'test_browser' 
       };
 
-      // ✅ 2. เพิ่มบรรทัดนี้: สั่งให้ Sync ลง Database ด้วย!
+      // ✅ 2. สั่งให้ Sync ลง Database ด้วย!
       const dbUser = await this.authService.syncLineProfile(this.lineProfile);
       
       if (dbUser) {
@@ -88,24 +88,25 @@ export class ProfilePage implements OnInit {
   async openVisitorRegister() {
     const modal = await this.modalCtrl.create({
       component: VisitorRegistrationModalComponent,
-      componentProps: { lineData: this.lineProfile }
+      // ✅ แก้ไข: ส่ง currentUserId ให้ตรงกับ @Input ใน Modal
+      componentProps: { 
+        currentUserId: this.lineProfile?.userId 
+      }
     });
     await modal.present();
 
     const { data } = await modal.onWillDismiss();
     
+    // ✅ แก้ไข: ถ้าลงทะเบียนสำเร็จ ไม่ต้องบันทึกซ้ำซ้อน แค่อัปเดต UI
     if (data?.registered) {
-      const visitorForm = data.visitorData;
-
-      const dbPayload = {
-        full_name: `${visitorForm.firstName} ${visitorForm.lastName}`,
-        phone_number: visitorForm.phone,
-        company: visitorForm.company,
-        email: visitorForm.email,
-        role: 'visitor'
-      };
-
-      await this.confirmRoleChange('visitor', dbPayload);
+      this.currentRole = 'visitor'; // เปลี่ยน Role ในหน้า UI ทันที
+      
+      const successAlert = await this.alertCtrl.create({
+        header: 'ลงทะเบียนสำเร็จ',
+        message: 'คุณได้รับสิทธิ์เข้าอาคาร (Visitor) เรียบร้อยแล้ว',
+        buttons: ['ตกลง']
+      });
+      await successAlert.present();
     }
   }
 
@@ -172,9 +173,6 @@ export class ProfilePage implements OnInit {
         buttons: ['ตกลง']
       });
       await successAlert.present();
-      
-      // ปิดหน้า LIFF ให้อัตโนมัติ เพื่อให้ User เห็นเมนูใหม่
-      // this.lineService.closeWindow(); 
 
     } catch (error) {
       await loading.dismiss();

@@ -33,6 +33,11 @@
     </ion-item>
 
     <ion-item fill="outline" class="ion-margin-bottom">
+      <ion-icon slot="start" name="mail-outline"></ion-icon>
+      <ion-input label="อีเมล (Email)" labelPlacement="floating" type="email" [(ngModel)]="formData.email"></ion-input>
+    </ion-item>
+
+    <ion-item fill="outline" class="ion-margin-bottom">
       <ion-icon slot="start" name="business-outline"></ion-icon>
       <ion-input label="บริษัท / หน่วยงาน" labelPlacement="floating" [(ngModel)]="formData.company"></ion-input>
     </ion-item>
