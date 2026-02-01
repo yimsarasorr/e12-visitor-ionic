@@ -2,7 +2,7 @@
   <ion-toolbar>
     <ion-title>Profile</ion-title>
     <ion-buttons slot="end">
-      <ion-button *ngIf="currentRole !== 'guest'" (click)="logout()">
+      <ion-button *ngIf="isLoggedIn" (click)="logout()">
         <ion-icon slot="icon-only" name="log-out-outline"></ion-icon>
       </ion-button>
     </ion-buttons>
@@ -10,33 +10,23 @@
 </ion-header>
 
 <ion-content class="ion-padding">
-  <div *ngIf="currentRole === 'guest'" class="guest-container ion-text-center">
-    <div class="welcome-box ion-margin-bottom">
-      <ion-avatar class="profile-img-large">
-        <img [src]="lineProfile?.pictureUrl || 'assets/icon/favicon.png'" />
-      </ion-avatar>
-      <h2>สวัสดีคุณ {{ lineProfile?.displayName || 'Guest' }}</h2>
-      <p class="ion-text-muted">กรุณาเลือกประเภทผู้ใช้งานเพื่อลงทะเบียน</p>
+  <!-- Login prompt when not logged in -->
+  <!-- <div *ngIf="!isLoggedIn" class="login-container ion-text-center">
+    <div style="margin-top: 30vh;">
+      <ion-icon name="chatbubbles-outline" style="font-size: 80px; color: #06c755; margin-bottom: 20px;"></ion-icon>
+      <h2>ยืนยันตัวตน</h2>
+      <p class="ion-text-muted ion-margin-bottom">
+        กรุณากดปุ่มด้านล่างเพื่อยืนยันตัวตน<br>ผ่านแอปพลิเคชัน LINE
+      </p>
+      <ion-button expand="block" color="success" size="large" (click)="loginNow()">
+        <ion-icon name="log-in-outline" slot="start"></ion-icon>
+        เข้าสู่ระบบด้วย LINE
+      </ion-button>
     </div>
+  </div> -->
 
-    <ion-card button (click)="openVisitorRegister()" class="role-card">
-      <ion-card-content>
-        <ion-icon name="people-outline" size="large" color="success"></ion-icon>
-        <h3>บุคคลทั่วไป (Visitor)</h3>
-        <p>สำหรับผู้มาติดต่อ, ส่งของ, สัมภาษณ์งาน</p>
-      </ion-card-content>
-    </ion-card>
-
-    <ion-card button (click)="openKmitlLogin()" class="role-card">
-      <ion-card-content>
-        <ion-icon name="school-outline" size="large" color="primary"></ion-icon>
-        <h3>นักศึกษา / บุคลากร</h3>
-        <p>เข้าสู่ระบบด้วย KMITL Account</p>
-      </ion-card-content>
-    </ion-card>
-  </div>
-
-  <div *ngIf="currentRole !== 'guest'">
+  <!-- Profile view when logged in -->
+  <div *ngIf="isLoggedIn">
     <ion-card class="profile-card">
       <ion-card-header>
         <ion-item lines="none">
@@ -47,9 +37,7 @@
             <h2>{{ lineProfile?.displayName }}</h2>
             <p>
               สถานะ:
-              <ion-badge [color]="getRoleColor(currentRole)"
-                >{{ currentRole | uppercase }}</ion-badge
-              >
+              <ion-badge [color]="getRoleColor(currentRole)">{{ currentRole | uppercase }}</ion-badge>
             </p>
           </ion-label>
         </ion-item>
