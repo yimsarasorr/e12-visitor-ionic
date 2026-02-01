@@ -40,7 +40,7 @@ export class ProfilePage implements OnInit {
     private loadingCtrl: LoadingController,
     private alertCtrl: AlertController
   ) { 
-    addIcons({logOutOutline,logInOutline,cardOutline,chatbubblesOutline,peopleOutline,schoolOutline});
+    addIcons({logOutOutline,chatbubbles,logInOutline,cardOutline,chatbubblesOutline,peopleOutline,schoolOutline});
   }
 
   async ngOnInit() {
@@ -194,6 +194,7 @@ export class ProfilePage implements OnInit {
   
   logout() {
     this.lineService.logout();
+    window.location.reload();
   }
 
   getRoleColor(role: string): string {
@@ -243,6 +244,8 @@ export class ProfilePage implements OnInit {
     window.open(link, '_system');
   }
 
+  
+  
   // Trigger LINE Login/App Switch
   loginNow(): void {
     const svc: any = this.lineService as any;
