@@ -2,7 +2,7 @@
   <ion-toolbar>
     <ion-title>Profile</ion-title>
     <ion-buttons slot="end">
-      <ion-button *ngIf="currentRole !== 'guest'" (click)="logout()">
+      <ion-button *ngIf="isLoggedIn" (click)="logout()">
         <ion-icon slot="icon-only" name="log-out-outline"></ion-icon>
       </ion-button>
     </ion-buttons>
