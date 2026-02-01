@@ -16,12 +16,24 @@ export class LineService {
   async initLiff() {
     try {
       await liff.init({
-        liffId: this.LIFF_ID,
-        withLoginOnExternalBrowser: true
+        liffId: this.LIFF_ID
+        // withLoginOnExternalBrowser: true // removed to prevent auto redirect
       });
     } catch (error) {
       console.error('LIFF Init Error:', error);
     }
+  }
+
+  // ✅ เพิ่มฟังก์ชัน Login ธรรมดา (ให้ผู้ใช้กดเอง)
+  login() {
+    if (!liff.isLoggedIn()) {
+      liff.login({ redirectUri: window.location.href });
+    }
+  }
+
+  // ✅ wrapper สำหรับเช็คสถานะ login
+  isLoggedIn(): boolean {
+    return liff.isLoggedIn();
   }
 
   isInClient(): boolean {

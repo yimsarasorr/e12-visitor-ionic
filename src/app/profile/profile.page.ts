@@ -7,7 +7,7 @@ import {
   IonBadge, IonCardHeader, IonCardSubtitle, IonNote, 
   ModalController, LoadingController, AlertController, IonButtons } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { peopleOutline, schoolOutline, logOutOutline, cardOutline, chatbubblesOutline } from 'ionicons/icons';
+import { peopleOutline, schoolOutline, logOutOutline, cardOutline, chatbubblesOutline, logInOutline } from 'ionicons/icons';
 
 // Import Services
 import { LineService } from '../services/line.service';
@@ -31,6 +31,7 @@ export class ProfilePage implements OnInit {
   currentRole: string = 'guest'; // default
   lineProfile: any = null;
   isLiffLoading = false;
+  isLoggedIn = false;
 
   constructor(
     private lineService: LineService,
@@ -39,7 +40,7 @@ export class ProfilePage implements OnInit {
     private loadingCtrl: LoadingController,
     private alertCtrl: AlertController
   ) { 
-    addIcons({logOutOutline,peopleOutline,schoolOutline,cardOutline,chatbubblesOutline});
+    addIcons({ logInOutline, cardOutline, chatbubblesOutline, logOutOutline, peopleOutline, schoolOutline });
   }
 
   async ngOnInit() {
@@ -49,11 +50,15 @@ export class ProfilePage implements OnInit {
   async initData() {
     this.isLiffLoading = true;
     await this.lineService.initLiff();
-    
+
+    // ตั้งค่าสถานะ login จากโปรไฟล์ที่ได้
+    const prof = await this.lineService.getProfile();
+    this.isLoggedIn = !!prof;
+
     if (this.lineService.isInClient()) {
       // 📱 กรณีเปิดใน LINE
       console.log('📱 Running inside LINE App');
-      this.lineProfile = await this.lineService.getProfile();
+      this.lineProfile = prof || await this.lineService.getProfile();
       
       if (this.lineProfile) {
         const dbUser = await this.authService.syncLineProfile(this.lineProfile);
@@ -80,6 +85,7 @@ export class ProfilePage implements OnInit {
         this.currentRole = dbUser.role;
         console.log('✅ (Mock) Current Role form DB:', this.currentRole);
       }
+      this.isLoggedIn = true; // ให้เห็นหน้าทดสอบใน Browser
     }
     this.isLiffLoading = false;
   }
@@ -235,5 +241,15 @@ export class ProfilePage implements OnInit {
   openLineOA(): void {
     const link = this.lineService.getLineOALink();
     window.open(link, '_system');
+  }
+
+  // Trigger LINE Login/App Switch
+  loginNow(): void {
+    const svc: any = this.lineService as any;
+    if (typeof svc.login === 'function') {
+      svc.login();
+    } else {
+      this.lineService.initLiff();
+    }
   }
 }
