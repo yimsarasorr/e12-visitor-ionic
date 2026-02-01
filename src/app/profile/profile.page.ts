@@ -51,42 +51,28 @@ export class ProfilePage implements OnInit {
     this.isLiffLoading = true;
     await this.lineService.initLiff();
 
-    // ตั้งค่าสถานะ login จากโปรไฟล์ที่ได้
-    const prof = await this.lineService.getProfile();
-    this.isLoggedIn = !!prof;
+    // ✅ เช็คสถานะจาก LIFF SDK จริง
+    const _isLoggedIn = this.lineService.isLoggedIn();
+    this.isLoggedIn = _isLoggedIn;
 
-    if (this.lineService.isInClient()) {
-      // 📱 กรณีเปิดใน LINE
-      console.log('📱 Running inside LINE App');
-      this.lineProfile = prof || await this.lineService.getProfile();
-      
+    if (_isLoggedIn) {
+      console.log('✅ User is logged in');
+      this.lineProfile = await this.lineService.getProfile();
+
       if (this.lineProfile) {
+        console.log('👤 Profile:', this.lineProfile.userId);
         const dbUser = await this.authService.syncLineProfile(this.lineProfile);
         if (dbUser) {
           this.currentRole = dbUser.role;
-          console.log('✅ Current Role form DB:', this.currentRole);
+          console.log('🏷️ Role:', this.currentRole);
         }
       }
     } else {
-      // 💻 กรณีเปิดใน Browser (เพิ่มการ Sync)
-      console.log('💻 Running in Browser');
-      
-      // 1. สร้าง Mock Data
-      this.lineProfile = { 
-        displayName: 'Browser Test', 
-        pictureUrl: '', 
-        userId: 'test_browser' 
-      };
-
-      // ✅ 2. สั่งให้ Sync ลง Database ด้วย!
-      const dbUser = await this.authService.syncLineProfile(this.lineProfile);
-      
-      if (dbUser) {
-        this.currentRole = dbUser.role;
-        console.log('✅ (Mock) Current Role form DB:', this.currentRole);
-      }
-      this.isLoggedIn = true; // ให้เห็นหน้าทดสอบใน Browser
+      console.log('❌ User is NOT logged in. Waiting for user action.');
+      this.lineProfile = null;
+      this.currentRole = 'guest';
     }
+
     this.isLiffLoading = false;
   }
 
