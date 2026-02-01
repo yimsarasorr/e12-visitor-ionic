@@ -7,7 +7,7 @@ import {
   IonBadge, IonCardHeader, IonCardSubtitle, IonNote, 
   ModalController, LoadingController, AlertController, IonButtons } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { peopleOutline, schoolOutline, logOutOutline, cardOutline, chatbubblesOutline } from 'ionicons/icons';
+import { peopleOutline, schoolOutline, logOutOutline, cardOutline, chatbubblesOutline, logInOutline } from 'ionicons/icons';
 
 // Import Services
 import { LineService } from '../services/line.service';
@@ -31,6 +31,9 @@ export class ProfilePage implements OnInit {
   currentRole: string = 'guest'; // default
   lineProfile: any = null;
   isLiffLoading = false;
+  
+  // ✅ เพิ่มตัวแปรเช็คสถานะ login ให้ UI ใช้
+  isLoggedIn = false;
 
   constructor(
     private lineService: LineService,
@@ -39,7 +42,8 @@ export class ProfilePage implements OnInit {
     private loadingCtrl: LoadingController,
     private alertCtrl: AlertController
   ) { 
-    addIcons({logOutOutline,peopleOutline,schoolOutline,cardOutline,chatbubblesOutline});
+    // ✅ เพิ่ม icon logInOutline สำหรับปุ่ม Login
+    addIcons({logOutOutline, logInOutline, peopleOutline, schoolOutline, cardOutline, chatbubblesOutline});
   }
 
   async ngOnInit() {
@@ -50,45 +54,48 @@ export class ProfilePage implements OnInit {
     this.isLiffLoading = true;
     await this.lineService.initLiff();
     
-    if (this.lineService.isInClient()) {
-      // 📱 กรณีเปิดใน LINE
-      console.log('📱 Running inside LINE App');
-      this.lineProfile = await this.lineService.getProfile();
+    // ✅ แก้ไขใหม่: เช็คสถานะจริงจาก LIFF SDK อย่างเดียว (ไม่สนว่าเป็น Browser หรือ App)
+    // ถ้าเคย Login ค้างไว้ ค่านี้จะเป็น true, ถ้าไม่เคย หรือ Logout แล้วจะเป็น false
+    this.isLoggedIn = this.lineService.isLoggedIn();
+
+    if (this.isLoggedIn) {
+      // 🟢 กรณี Login อยู่จริง (ดึงข้อมูลจริง)
+      console.log('✅ User is logged in (LIFF)');
       
-      if (this.lineProfile) {
-        const dbUser = await this.authService.syncLineProfile(this.lineProfile);
-        if (dbUser) {
-          this.currentRole = dbUser.role;
-          console.log('✅ Current Role form DB:', this.currentRole);
+      try {
+        this.lineProfile = await this.lineService.getProfile();
+        
+        if (this.lineProfile) {
+          // Sync ลง Database
+          const dbUser = await this.authService.syncLineProfile(this.lineProfile);
+          if (dbUser) {
+            this.currentRole = dbUser.role;
+            console.log('✅ Current Role form DB:', this.currentRole);
+          }
         }
+      } catch (error) {
+        console.error('Error getting profile:', error);
       }
     } else {
-      // 💻 กรณีเปิดใน Browser (เพิ่มการ Sync)
-      console.log('💻 Running in Browser');
-      
-      // 1. สร้าง Mock Data
-      this.lineProfile = { 
-        displayName: 'Browser Test', 
-        pictureUrl: '', 
-        userId: 'test_browser' 
-      };
-
-      // ✅ 2. สั่งให้ Sync ลง Database ด้วย!
-      const dbUser = await this.authService.syncLineProfile(this.lineProfile);
-      
-      if (dbUser) {
-        this.currentRole = dbUser.role;
-        console.log('✅ (Mock) Current Role form DB:', this.currentRole);
-      }
+      // 🔴 กรณีไม่ได้ Login (Browser จะตกมาที่นี่ และ HTML จะโชว์ปุ่ม Login)
+      console.log('❌ User is NOT logged in. Waiting for user action.');
+      this.lineProfile = null;
+      this.currentRole = 'guest';
     }
+    
     this.isLiffLoading = false;
+  }
+
+  // ✅ เพิ่มฟังก์ชันนี้เพื่อให้ปุ่ม "เข้าสู่ระบบด้วย LINE" ใน HTML เรียกใช้
+  loginNow() {
+    // เรียกฟังก์ชัน login ใน service (ที่มี redirectUri)
+    this.lineService.login(); 
   }
 
   // --- 🟢 Flow 1: Visitor Register ---
   async openVisitorRegister() {
     const modal = await this.modalCtrl.create({
       component: VisitorRegistrationModalComponent,
-      // ✅ แก้ไข: ส่ง currentUserId ให้ตรงกับ @Input ใน Modal
       componentProps: { 
         currentUserId: this.lineProfile?.userId 
       }
@@ -97,9 +104,8 @@ export class ProfilePage implements OnInit {
 
     const { data } = await modal.onWillDismiss();
     
-    // ✅ แก้ไข: ถ้าลงทะเบียนสำเร็จ ไม่ต้องบันทึกซ้ำซ้อน แค่อัปเดต UI
     if (data?.registered) {
-      this.currentRole = 'visitor'; // เปลี่ยน Role ในหน้า UI ทันที
+      this.currentRole = 'visitor'; 
       
       const successAlert = await this.alertCtrl.create({
         header: 'ลงทะเบียนสำเร็จ',
@@ -135,12 +141,10 @@ export class ProfilePage implements OnInit {
   }
 
   async processKmitlLogin(username: string) {
-    // Logic จำลอง: รหัสขึ้นต้นด้วย '6' = นักศึกษา (User), '9' = อาจารย์ (Host)
     let newRole = 'user'; 
     if (username.startsWith('9')) newRole = 'host';
 
     const extraData = {
-      // ตรงนี้อาจจะเป็น student_id หรือ field อื่นๆ ที่คุณเพิ่มใน table profiles
       department: 'Engineering'
     };
 
@@ -153,22 +157,19 @@ export class ProfilePage implements OnInit {
     await loading.present();
 
     try {
-      // 1. อัปเดต DB
       const updateData = { role: newRole, ...extraData };
       if (this.lineProfile?.userId) {
          await this.authService.updateProfile(this.lineProfile.userId, updateData);
       }
 
-      // 2. สั่งเปลี่ยน Rich Menu
       await this.lineService.switchMenu(newRole);
 
-      // 3. อัปเดตหน้าจอ
       this.currentRole = newRole;
       
       await loading.dismiss();
       
       const successAlert = await this.alertCtrl.create({
-        header: 'ลงทะเบียนสำเร็จ',
+        header: 'สำเร็จ',
         message: `คุณได้รับสิทธิ์: ${newRole.toUpperCase()} เรียบร้อยแล้ว`,
         buttons: ['ตกลง']
       });
@@ -181,13 +182,14 @@ export class ProfilePage implements OnInit {
     }
   }
 
-  // Helper สำหรับปุ่ม Reset
   async changeRole(role: string) {
      await this.confirmRoleChange(role, {});
   }
   
   logout() {
     this.lineService.logout();
+    // เพิ่ม reload เพื่อเคลียร์ state หน้าจอ
+    window.location.reload(); 
   }
 
   getRoleColor(role: string): string {
@@ -216,7 +218,7 @@ export class ProfilePage implements OnInit {
 
         const alert = await this.alertCtrl.create({
           header: 'Success',
-          message: `เปลี่ยนเมนูเป็น ${role} เรียบร้อย (กดปิดแล้วดูที่เมนูด้านล่าง)`,
+          message: `เปลี่ยนเมนูเป็น ${role} เรียบร้อย`,
           buttons: ['OK']
         });
         await alert.present();
@@ -231,7 +233,6 @@ export class ProfilePage implements OnInit {
     }
   }
 
-  // ฟังก์ชันเปิด LINE OA
   openLineOA(): void {
     const link = this.lineService.getLineOALink();
     window.open(link, '_system');

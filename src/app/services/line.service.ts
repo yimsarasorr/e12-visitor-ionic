@@ -26,6 +26,18 @@ export class LineService {
     }
   }
 
+  // ✅ expose LIFF login state
+  isLoggedIn(): boolean {
+    return liff.isLoggedIn();
+  }
+
+  // ✅ trigger login on user action
+  login(): void {
+    if (!liff.isLoggedIn()) {
+      liff.login({ redirectUri: window.location.href });
+    }
+  }
+
   isInClient(): boolean {
     return liff.isInClient();
   }
