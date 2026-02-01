@@ -18,8 +18,12 @@ export class LineService {
     try {
       await liff.init({ 
         liffId: this.LIFF_ID,
-        withLoginOnExternalBrowser: true
+        withLoginOnExternalBrowser: true 
       });
+
+      if (!liff.isLoggedIn() && !liff.isInClient()) {
+        liff.login({ redirectUri: window.location.href });
+      }
 
     } catch (error) {
       console.error('LIFF Init Error:', error);
