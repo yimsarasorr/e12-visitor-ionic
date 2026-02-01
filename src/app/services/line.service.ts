@@ -8,7 +8,7 @@ import { environment } from 'src/environments/environment';
 })
 export class LineService {
 
-  private readonly LIFF_ID = '2008822504-QHufvISJ';
+  private readonly LIFF_ID = '2008822504-zYHJ3fIk';
   private readonly FUNCTION_URL = 'https://rcspzyeyyduobbuamuoq.supabase.co/functions/v1/switch-menu';
   public readonly LINE_OA_ID = '@804vyuvy';
 
