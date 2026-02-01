@@ -40,7 +40,7 @@ export class ProfilePage implements OnInit {
     private loadingCtrl: LoadingController,
     private alertCtrl: AlertController
   ) { 
-    addIcons({ logInOutline, cardOutline, chatbubblesOutline, logOutOutline, peopleOutline, schoolOutline });
+    addIcons({logOutOutline,chatbubbles,logInOutline,cardOutline,chatbubblesOutline,peopleOutline,schoolOutline});
   }
 
   async ngOnInit() {
