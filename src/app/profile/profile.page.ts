@@ -5,12 +5,14 @@ import {
   IonContent, IonHeader, IonTitle, IonToolbar, IonList, IonItem, 
   IonIcon, IonLabel, IonAvatar, IonButton, IonCard, IonCardContent, 
   IonBadge, IonCardHeader, IonCardSubtitle, IonNote, 
-  ModalController, LoadingController, AlertController, IonButtons, IonSpinner 
+  ModalController, LoadingController, AlertController, IonButtons, IonSpinner, 
+  IonSegment, IonSegmentButton
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { 
   peopleOutline, schoolOutline, logOutOutline, cardOutline, 
-  chatbubblesOutline, logInOutline, qrCodeOutline, refreshOutline 
+  chatbubblesOutline, logInOutline, qrCodeOutline, refreshOutline, 
+  chevronForwardOutline
 } from 'ionicons/icons';
 
 // Import Services
@@ -18,16 +20,19 @@ import { LineService } from '../services/line.service';
 import { AuthService } from '../services/auth.service';
 // Import Components
 import { VisitorRegistrationModalComponent } from '../components/ui/visitor-registration-modal/visitor-registration-modal.component';
+import { FastpassHeaderComponent } from '../components/ui/fastpass-header/fastpass-header.component';
 
 @Component({
   selector: 'app-profile',
   templateUrl: './profile.page.html',
   styleUrls: ['./profile.page.scss'],
   standalone: true,
-  imports: [IonSpinner, IonButtons, 
+  imports: [
+    IonSpinner, IonButtons, 
     CommonModule, FormsModule, IonContent, IonHeader, IonTitle, IonToolbar, 
     IonList, IonItem, IonIcon, IonLabel, IonAvatar, IonButton, IonCard, 
-    IonCardContent, IonBadge, IonCardHeader, IonCardSubtitle, IonNote
+    IonCardContent, IonBadge, IonCardHeader, IonCardSubtitle, IonNote,
+    IonSegment, IonSegmentButton, FastpassHeaderComponent
   ]
 })
 export class ProfilePage implements OnInit {
@@ -36,6 +41,7 @@ export class ProfilePage implements OnInit {
   lineProfile: any = null;
   isLiffLoading = false;
   isLoggedIn = false;
+  selectedTab = 'dashboard';
 
   constructor(
     private lineService: LineService,
@@ -48,7 +54,7 @@ export class ProfilePage implements OnInit {
     addIcons({
       logOutOutline, cardOutline, qrCodeOutline, 
       chatbubblesOutline, refreshOutline, logInOutline, 
-      peopleOutline, schoolOutline
+      peopleOutline, schoolOutline, chevronForwardOutline
     });
   }
 
@@ -236,5 +242,9 @@ export class ProfilePage implements OnInit {
   openLineOA(): void {
     const link = this.lineService.getLineOALink();
     window.open(link, '_system');
+  }
+
+  segmentChanged(ev: any) {
+    this.selectedTab = ev.detail.value;
   }
 }

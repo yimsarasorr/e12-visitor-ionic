@@ -67,3 +67,110 @@
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
+
+/* 1) พื้นหลังทั้งหน้า */
+.bg-main {
+  --background: #f8f9fd;
+}
+
+/* 2) Header พื้นหลังขาว */
+ion-header {
+  background: #fff;
+  ion-toolbar { --background: #fff; }
+}
+
+/* 3) ส่วนบนใต้ Header */
+.top-section {
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* 4) การ์ดผู้ใช้สไตล์ Figma */
+.figma-user-card {
+  margin: 0 0 20px 0;
+  width: 100%;
+  box-shadow: none !important;
+  border: 1px solid #eaecf0;
+  border-radius: 16px;
+  background: #fff;
+
+  ion-item {
+    --background: transparent;
+    --padding-start: 16px;
+    --inner-padding-end: 16px;
+    padding: 6px 0;
+
+    ion-avatar {
+      width: 56px; height: 56px;
+      margin-right: 16px;
+      border: 2px solid #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    ion-label {
+      h2 {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 4px;
+      }
+      .role-container {
+        display: flex;
+        ion-badge {
+          padding: 6px 10px;
+          border-radius: 8px;
+          font-weight: 600;
+          font-size: 0.75rem;
+        }
+      }
+    }
+  }
+}
+
+/* 5) Tabs (Segment) */
+.figma-tabs {
+  background: transparent;
+
+  ion-segment-button {
+    --background-checked: transparent;
+    --color: #64748b;
+    --color-checked: var(--ion-color-primary);
+    --indicator-color: var(--ion-color-primary);
+    --indicator-height: 3px;
+
+    font-weight: 600;
+    font-size: 1rem;
+    letter-spacing: 0;
+    min-height: 48px;
+    text-transform: none;
+
+    ion-label { margin: 0; }
+  }
+}
+
+.sub-header-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+  min-height: 40px;
+
+  .page-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #000;
+    text-align: center;
+  }
+
+  .logout-btn {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    margin: 0;
+    --padding-end: 0;
+    z-index: 10;
+  }
+}
