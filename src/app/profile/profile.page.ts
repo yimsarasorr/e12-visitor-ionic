@@ -5,9 +5,13 @@ import {
   IonContent, IonHeader, IonTitle, IonToolbar, IonList, IonItem, 
   IonIcon, IonLabel, IonAvatar, IonButton, IonCard, IonCardContent, 
   IonBadge, IonCardHeader, IonCardSubtitle, IonNote, 
-  ModalController, LoadingController, AlertController, IonButtons } from '@ionic/angular/standalone';
+  ModalController, LoadingController, AlertController, IonButtons, IonSpinner 
+} from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { peopleOutline, schoolOutline, logOutOutline, cardOutline, chatbubblesOutline, logInOutline } from 'ionicons/icons';
+import { 
+  peopleOutline, schoolOutline, logOutOutline, cardOutline, 
+  chatbubblesOutline, logInOutline, qrCodeOutline, refreshOutline 
+} from 'ionicons/icons';
 
 // Import Services
 import { LineService } from '../services/line.service';
@@ -20,7 +24,7 @@ import { VisitorRegistrationModalComponent } from '../components/ui/visitor-regi
   templateUrl: './profile.page.html',
   styleUrls: ['./profile.page.scss'],
   standalone: true,
-  imports: [IonButtons, 
+  imports: [IonSpinner, IonButtons, 
     CommonModule, FormsModule, IonContent, IonHeader, IonTitle, IonToolbar, 
     IonList, IonItem, IonIcon, IonLabel, IonAvatar, IonButton, IonCard, 
     IonCardContent, IonBadge, IonCardHeader, IonCardSubtitle, IonNote
@@ -28,7 +32,7 @@ import { VisitorRegistrationModalComponent } from '../components/ui/visitor-regi
 })
 export class ProfilePage implements OnInit {
 
-  currentRole: string = 'guest'; // default
+  currentRole: string = 'guest'; // default role
   lineProfile: any = null;
   isLiffLoading = false;
   isLoggedIn = false;
@@ -40,7 +44,12 @@ export class ProfilePage implements OnInit {
     private loadingCtrl: LoadingController,
     private alertCtrl: AlertController
   ) { 
-    addIcons({logOutOutline,logInOutline,cardOutline,chatbubblesOutline,peopleOutline,schoolOutline});
+    // Add Icons
+    addIcons({
+      logOutOutline, cardOutline, qrCodeOutline, 
+      chatbubblesOutline, refreshOutline, logInOutline, 
+      peopleOutline, schoolOutline
+    });
   }
 
   async ngOnInit() {
@@ -49,38 +58,47 @@ export class ProfilePage implements OnInit {
 
   async initData() {
     this.isLiffLoading = true;
+    
+    // 1. Init LIFF SDK
     await this.lineService.initLiff();
 
-    // ✅ เช็คสถานะจาก LIFF SDK จริง
+    // 2. ตรวจสอบสถานะ Login จริง
     const _isLoggedIn = this.lineService.isLoggedIn();
     this.isLoggedIn = _isLoggedIn;
 
     if (_isLoggedIn) {
-      console.log('✅ User is logged in');
-      this.lineProfile = await this.lineService.getProfile();
+      // ✅ กรณี Login แล้ว: ดึงข้อมูลและ Sync DB
+      console.log('✅ User is logged in (LIFF)');
+      try {
+        this.lineProfile = await this.lineService.getProfile();
 
-      if (this.lineProfile) {
-        console.log('👤 Profile:', this.lineProfile.userId);
-        const dbUser = await this.authService.syncLineProfile(this.lineProfile);
-        if (dbUser) {
-          this.currentRole = dbUser.role;
-          console.log('🏷️ Role:', this.currentRole);
+        if (this.lineProfile) {
+          console.log('👤 Profile:', this.lineProfile.userId);
+          
+          // Sync ลง Database
+          const dbUser = await this.authService.syncLineProfile(this.lineProfile);
+          if (dbUser) {
+            this.currentRole = dbUser.role;
+            console.log('🏷️ Role from DB:', this.currentRole);
+          }
         }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
       }
     } else {
-      console.log('❌ User is NOT logged in. Waiting for user action.');
-      this.lineProfile = null;
-      this.currentRole = 'guest';
+      // 🚀 กรณีหลุด Login: สั่ง Auto Login ทันที (Force Redirect)
+      console.log('🔄 Not logged in. Redirecting to LINE Login...');
+      this.lineService.login(); 
+      // โค้ดจะหยุดทำงานตรงนี้เพราะ Browser จะ Redirect หน้าไปที่อื่น
     }
 
     this.isLiffLoading = false;
   }
 
-  // --- 🟢 Flow 1: Visitor Register ---
+  // --- 🟢 Flow 1: Visitor Register (เก็บไว้ใช้ในอนาคต) ---
   async openVisitorRegister() {
     const modal = await this.modalCtrl.create({
       component: VisitorRegistrationModalComponent,
-      // ✅ แก้ไข: ส่ง currentUserId ให้ตรงกับ @Input ใน Modal
       componentProps: { 
         currentUserId: this.lineProfile?.userId 
       }
@@ -89,10 +107,8 @@ export class ProfilePage implements OnInit {
 
     const { data } = await modal.onWillDismiss();
     
-    // ✅ แก้ไข: ถ้าลงทะเบียนสำเร็จ ไม่ต้องบันทึกซ้ำซ้อน แค่อัปเดต UI
     if (data?.registered) {
-      this.currentRole = 'visitor'; // เปลี่ยน Role ในหน้า UI ทันที
-      
+      this.currentRole = 'visitor';
       const successAlert = await this.alertCtrl.create({
         header: 'ลงทะเบียนสำเร็จ',
         message: 'คุณได้รับสิทธิ์เข้าอาคาร (Visitor) เรียบร้อยแล้ว',
@@ -102,7 +118,7 @@ export class ProfilePage implements OnInit {
     }
   }
 
-  // --- 🟠 Flow 2: KMITL Login (Mock) ---
+  // --- 🟠 Flow 2: KMITL Login (Mock) (เก็บไว้ใช้ในอนาคต) ---
   async openKmitlLogin() {
     const alert = await this.alertCtrl.create({
       header: 'KMITL SSO Login',
@@ -127,15 +143,12 @@ export class ProfilePage implements OnInit {
   }
 
   async processKmitlLogin(username: string) {
-    // Logic จำลอง: รหัสขึ้นต้นด้วย '6' = นักศึกษา (User), '9' = อาจารย์ (Host)
     let newRole = 'user'; 
     if (username.startsWith('9')) newRole = 'host';
 
     const extraData = {
-      // ตรงนี้อาจจะเป็น student_id หรือ field อื่นๆ ที่คุณเพิ่มใน table profiles
       department: 'Engineering'
     };
-
     await this.confirmRoleChange(newRole, extraData);
   }
 
@@ -145,23 +158,19 @@ export class ProfilePage implements OnInit {
     await loading.present();
 
     try {
-      // 1. อัปเดต DB
       const updateData = { role: newRole, ...extraData };
       if (this.lineProfile?.userId) {
          await this.authService.updateProfile(this.lineProfile.userId, updateData);
       }
 
-      // 2. สั่งเปลี่ยน Rich Menu
       await this.lineService.switchMenu(newRole);
-
-      // 3. อัปเดตหน้าจอ
       this.currentRole = newRole;
       
       await loading.dismiss();
       
       const successAlert = await this.alertCtrl.create({
-        header: 'ลงทะเบียนสำเร็จ',
-        message: `คุณได้รับสิทธิ์: ${newRole.toUpperCase()} เรียบร้อยแล้ว`,
+        header: 'สำเร็จ',
+        message: `เปลี่ยนสถานะเป็น: ${newRole.toUpperCase()} เรียบร้อย`,
         buttons: ['ตกลง']
       });
       await successAlert.present();
@@ -173,14 +182,11 @@ export class ProfilePage implements OnInit {
     }
   }
 
-  // Helper สำหรับปุ่ม Reset
-  async changeRole(role: string) {
-     await this.confirmRoleChange(role, {});
-  }
-  
+  // ฟังก์ชัน Logout
   logout() {
     this.lineService.logout();
-    window.location.reload();
+    // Reload เพื่อเริ่ม Flow Login ใหม่
+    window.location.reload(); 
   }
 
   getRoleColor(role: string): string {
@@ -192,24 +198,26 @@ export class ProfilePage implements OnInit {
     }
   }
 
-  // ✅ ฟังก์ชันทดสอบเปลี่ยนเมนู (Debug)
+  // ✅ 🔧 Dev Tools: Force Switch Role (ใช้สำหรับปุ่ม 4 ปุ่มด้านล่าง)
   async debugSwitchRole(role: string): Promise<void> {
-    const loading = await this.loadingCtrl.create({ message: `Switching to ${role}...` });
+    const loading = await this.loadingCtrl.create({ message: `Dev Force: ${role}...` });
     await loading.present();
 
     try {
+      // 1. เรียก Cloud Function เปลี่ยน Menu
       const success = await this.lineService.switchMenu(role);
 
       if (success) {
         this.currentRole = role;
 
+        // 2. อัปเดต DB ให้ตรงกัน
         if (this.lineProfile?.userId) {
           await this.authService.updateProfile(this.lineProfile.userId, { role });
         }
 
         const alert = await this.alertCtrl.create({
           header: 'Success',
-          message: `เปลี่ยนเมนูเป็น ${role} เรียบร้อย (กดปิดแล้วดูที่เมนูด้านล่าง)`,
+          message: `เปลี่ยนสถานะเป็น ${role.toUpperCase()} เรียบร้อย`,
           buttons: ['OK']
         });
         await alert.present();
@@ -224,21 +232,9 @@ export class ProfilePage implements OnInit {
     }
   }
 
-  // ฟังก์ชันเปิด LINE OA
+  // ฟังก์ชันเปิด LINE OA (ลิงก์ External)
   openLineOA(): void {
     const link = this.lineService.getLineOALink();
     window.open(link, '_system');
-  }
-
-  
-  
-  // Trigger LINE Login/App Switch
-  loginNow(): void {
-    const svc: any = this.lineService as any;
-    if (typeof svc.login === 'function') {
-      svc.login();
-    } else {
-      this.lineService.initLiff();
-    }
   }
 }
