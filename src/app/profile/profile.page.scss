@@ -174,3 +174,41 @@ ion-header {
     z-index: 10;
   }
 }
+
+/* ➕ Warning Banner Style */
+.warning-banner {
+  background: #fffbeb; 
+  border: 1px solid #fcd34d; 
+  margin-bottom: 16px; 
+  box-shadow: none !important;
+  ion-icon { margin-right: 10px; margin-left: 10px; }
+}
+
+/* ➕ Debug User ID (ตัวแดงเล็กๆ ในการ์ด) */
+.debug-userid {
+  font-size: 0.65rem; 
+  color: #ef4444; 
+  margin-top: 8px; 
+  font-family: monospace; 
+  cursor: pointer;
+  display: flex; 
+  align-items: center; 
+  gap: 4px;
+  opacity: 0.7;
+  
+  &:active { opacity: 1; transform: scale(0.98); }
+  ion-icon { font-size: 0.8rem; }
+}
+
+/* ➕ Browser Debug Box (กล่องดำ Hacker) */
+.browser-debug-box {
+  background: #1e293b;
+  color: #4ade80; /* สีเขียว */
+  padding: 15px;
+  border-radius: 12px;
+  font-family: monospace;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  
+  p { margin: 2px 0; }
+}

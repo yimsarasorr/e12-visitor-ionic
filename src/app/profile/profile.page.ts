@@ -12,8 +12,9 @@ import { addIcons } from 'ionicons';
 import { 
   peopleOutline, schoolOutline, logOutOutline, cardOutline, 
   chatbubblesOutline, logInOutline, qrCodeOutline, refreshOutline, 
-  chevronForwardOutline
+  chevronForwardOutline, alertCircleOutline, bugOutline, copyOutline
 } from 'ionicons/icons';
+import { UAParser } from 'ua-parser-js';
 
 // Import Services
 import { LineService } from '../services/line.service';
@@ -43,6 +44,10 @@ export class ProfilePage implements OnInit {
   isLoggedIn = false;
   selectedTab = 'dashboard';
 
+  // ➕ Debug & Browser Check
+  browserInfo: any = null;
+  isChromeOnIOS = false;
+
   constructor(
     private lineService: LineService,
     private authService: AuthService,
@@ -54,12 +59,36 @@ export class ProfilePage implements OnInit {
     addIcons({
       logOutOutline, cardOutline, qrCodeOutline, 
       chatbubblesOutline, refreshOutline, logInOutline, 
-      peopleOutline, schoolOutline, chevronForwardOutline
+      peopleOutline, schoolOutline, chevronForwardOutline,
+      alertCircleOutline, bugOutline, copyOutline
     });
   }
 
   async ngOnInit() {
+    // ➕ เช็ค Browser/OS และพยายามดีดไป Safari บน iOS ถ้าไม่ใช่ Mobile Safari
+    this.handleBrowserCheck();
     await this.initData();
+  }
+
+  copyCurrentLink() {
+    const url = window.location.href;
+    // ใช้ API Clipboard ของ Browser
+    navigator.clipboard.writeText(url).then(() => {
+      alert('คัดลอกลิงก์แล้ว! กรุณานำไปเปิดใน Safari');
+    }).catch(err => {
+      console.error('Copy failed', err);
+      // Fallback เผื่อบาง Browser ไม่รองรับ
+      alert('ไม่สามารถคัดลอกได้: ' + url);
+    });
+  }
+
+  // ✅ ฟังก์ชัน Copy User ID (แก้ Error: copyUserId does not exist)
+  copyUserId() {
+    if (this.lineProfile?.userId) {
+      navigator.clipboard.writeText(this.lineProfile.userId).then(() => {
+        alert('Copied User ID: ' + this.lineProfile.userId);
+      });
+    }
   }
 
   async initData() {
@@ -99,6 +128,25 @@ export class ProfilePage implements OnInit {
     }
 
     this.isLiffLoading = false;
+  }
+
+  // ➕ เช็ค Browser + Auto Redirect ไป Safari สำหรับ iOS (ถ้าเปิดด้วย Chrome/Edge/Line)
+  handleBrowserCheck() {
+    const parser = new UAParser();
+    const result = parser.getResult();
+    this.browserInfo = result;
+
+    if (result.os?.name === 'iOS' && result.browser?.name !== 'Mobile Safari') {
+      this.isChromeOnIOS = true;
+      const currentUrl = window.location.href;
+      if (currentUrl.startsWith('https://')) {
+        const safariUrl = currentUrl.replace('https://', 'x-safari-https://');
+        console.log('🚀 Attempting to redirect to Safari:', safariUrl);
+        setTimeout(() => {
+          window.location.href = safariUrl;
+        }, 500);
+      }
+    }
   }
 
   // --- 🟢 Flow 1: Visitor Register (เก็บไว้ใช้ในอนาคต) ---

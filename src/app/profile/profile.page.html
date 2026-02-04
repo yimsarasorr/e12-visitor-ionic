@@ -12,6 +12,23 @@
       </ion-button>
     </div>
 
+    <!-- Warning Banner for iOS Chrome/Edge/LINE browser -->
+    <ion-card class="warning-banner" *ngIf="isChromeOnIOS">
+      <ion-item lines="none" class="ion-no-padding">
+        <ion-icon name="alert-circle-outline" slot="start" color="warning"></ion-icon>
+        <ion-label class="ion-text-wrap">
+          <h3 style="font-weight: bold; color: #b45309;">Opening Safari...</h3>
+          <p style="font-size: 0.8rem; color: #92400e;">
+            ระบบกำลังเปิด Safari... <br>
+            หากไม่เปลี่ยนหน้า กรุณากดปุ่ม <b>Copy Link</b> แล้วเปิดเอง
+          </p>
+        </ion-label>
+      </ion-item>
+      <ion-button fill="clear" expand="block" (click)="copyCurrentLink()" style="height: 30px; font-size: 0.8rem;">
+        <ion-icon name="copy-outline" slot="start"></ion-icon> Copy Link Manual
+      </ion-button>
+    </ion-card>
+
     <div *ngIf="isLiffLoading" class="ion-text-center ion-padding">
       <ion-spinner color="primary"></ion-spinner>
     </div>
@@ -28,6 +45,11 @@
               {{ currentRole | uppercase }}
             </ion-badge>
           </div>
+          <!-- Debug User ID (tap to copy) -->
+          <p class="debug-userid" (click)="copyUserId()">
+            ID: {{ lineProfile?.userId || '...' }}
+            <ion-icon name="copy-outline"></ion-icon>
+          </p>
         </ion-label>
         <ion-icon slot="end" name="chevron-forward-outline" color="medium"></ion-icon>
       </ion-item>
@@ -72,6 +94,13 @@
           </div>
         </ion-card-content>
       </ion-card>
+  </div>
+
+  <!-- Browser Debug Box -->
+  <div class="browser-debug-box ion-margin-top" *ngIf="browserInfo">
+    <p><strong>🐞 Debug Info:</strong></p>
+    <p>Browser: {{ browserInfo?.browser?.name }} {{ browserInfo?.browser?.version }}</p>
+    <p>OS: {{ browserInfo?.os?.name }} {{ browserInfo?.os?.version }}</p>
   </div>
 
 </ion-content>
