@@ -66,7 +66,6 @@ export class ProfilePage implements OnInit {
 
   async ngOnInit() {
     // ➕ เช็ค Browser/OS และพยายามดีดไป Safari บน iOS ถ้าไม่ใช่ Mobile Safari
-    this.handleBrowserCheck();
     await this.initData();
   }
 
@@ -94,88 +93,137 @@ export class ProfilePage implements OnInit {
   async initData() {
     this.isLiffLoading = true;
 
-    try {
-      // 1) Init LIFF (SDK will read 'code' from URL automatically on Safari)
-      await this.lineService.initLiff();
-    } catch (e) {
-      console.error('LIFF Init Error:', e);
+    // 📥 ฝั่งรับ: ตรวจ bridge_user ใน URL (Safari/Chrome หลังถูกดีดมา)
+    const params = new URLSearchParams(window.location.search);
+    const bridgeData = params.get('bridge_user');
+
+    if (bridgeData) {
+      console.log('🚀 Received Data via Bridge!');
+      try {
+        const jsonString = decodeURIComponent(atob(bridgeData));
+        const userData = JSON.parse(jsonString);
+
+        this.lineProfile = userData;
+        this.isLoggedIn = true;
+
+        const dbUser = await this.authService.syncLineProfile(this.lineProfile);
+        if (dbUser) this.currentRole = dbUser.role;
+
+        console.log('✅ Bridge Login Success');
+
+        // ลบ query ออกจาก URL ให้กลับเป็นสะอาด
+        const cleanUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}`;
+        window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
+
+        this.isLiffLoading = false;
+        return;
+      } catch (e) {
+        console.error('Bridge Data Error:', e);
+      }
     }
 
-    // 2) Check login state
-    if (this.lineService.isLoggedIn()) {
-      // ✅ Logged in via relay
-      console.log('✅ User is logged in via Relay!');
-      try {
-        this.lineProfile = await this.lineService.getProfile();
-        if (this.lineProfile) {
+    // 📤 ฝั่งส่ง: ทำงานใน LINE App เท่านั้น
+    try {
+      await this.lineService.initLiff();
+
+      const parser = new UAParser();
+      const result = parser.getResult();
+
+      const isInLineApp =
+        result.ua.includes('Line') ||
+        (this.lineService.isLoggedIn() && (result.browser.name?.includes('Line') ?? false));
+
+      if (this.lineService.isLoggedIn() && isInLineApp) {
+        console.log('⚡️ Starting Bridge Protocol...');
+
+        const profile = await this.lineService.getProfile();
+        const dataToSend = JSON.stringify({
+          userId: profile.userId,
+          displayName: profile.displayName,
+          pictureUrl: profile.pictureUrl
+        });
+        const safeData = encodeURIComponent(btoa(dataToSend));
+
+        const baseUrl = window.location.href.split('?')[0];
+        const targetUrl = `${baseUrl}?bridge_user=${safeData}`;
+        const pureUrl = targetUrl.replace('https://', '').replace('http://', '');
+
+        if (result.os.name === 'iOS') {
+          // iOS -> Safari
+          console.log('🍎 iOS: Bouncing to Safari...');
+          const safariUrl = targetUrl.replace('https://', 'x-safari-https://');
+          window.location.href = safariUrl;
+        } else if (result.os.name === 'Android') {
+          // Android -> Chrome via intent
+          console.log('🤖 Android: Bouncing to Chrome...');
+          const intent = `intent://${pureUrl}#Intent;scheme=https;package=com.android.chrome;end`;
+          window.location.href = intent;
+        } else {
+          // Desktop/others: stay and proceed normally
+          this.lineProfile = profile;
           const dbUser = await this.authService.syncLineProfile(this.lineProfile);
-          if (dbUser) {
-            this.currentRole = dbUser.role;
-            console.log('🏷️ Role from DB:', this.currentRole);
-          }
+          if (dbUser) this.currentRole = dbUser.role;
         }
-      } catch (error) {
-        console.error('Error fetching profile:', error);
+        return;
       }
-    } else {
-      // 🛑 Not logged in: check if URL still has a code (avoid loop)
-      const params = new URLSearchParams(window.location.search);
-      if (params.has('code')) {
-        console.error('❌ Login failed despite having code (Code might be used/expired)');
-        alert('เกิดข้อผิดพลาดในการยืนยันตัวตน กรุณากดปุ่ม "เข้าสู่ระบบ" อีกครั้ง');
-        // Do not call login() here to avoid loop
+
+      // 🌐 กรณีทั่วไป: เปิดตรงใน Safari/Chrome
+      if (this.lineService.isLoggedIn()) {
+        this.lineProfile = await this.lineService.getProfile();
+        const dbUser = await this.authService.syncLineProfile(this.lineProfile);
+        if (dbUser) this.currentRole = dbUser.role;
       } else {
-        // No code -> begin login flow
-        console.log('🚀 Starting Login Flow...');
         this.lineService.login();
       }
+    } catch (e) {
+      console.error(e);
     }
 
     this.isLiffLoading = false;
   }
 
-  // เช็ค Browser + Auto Redirect ไป Safari สำหรับ iOS
-  handleBrowserCheck() {
-    const parser = new UAParser();
-    const result = parser.getResult();
-    this.browserInfo = result; // เก็บไว้โชว์ Debug
+  // // เช็ค Browser + Auto Redirect ไป Safari สำหรับ iOS
+  // handleBrowserCheck() {
+  //   const parser = new UAParser();
+  //   const result = parser.getResult();
+  //   this.browserInfo = result; // เก็บไว้โชว์ Debug
 
-    // 1) ดึงพารามิเตอร์จาก URL ที่ LINE ส่งมาให้ Chrome
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
-    const state = params.get('state');
-    const liffState = params.get('liff.state');
+  //   // 1) ดึงพารามิเตอร์จาก URL ที่ LINE ส่งมาให้ Chrome
+  //   const params = new URLSearchParams(window.location.search);
+  //   const code = params.get('code');
+  //   const state = params.get('state');
+  //   const liffState = params.get('liff.state');
 
-    // เช็คว่าเป็น iOS และไม่ใช่ Safari
-    const isIOS = result.os?.name === 'iOS';
-    const isNotSafari = result.browser?.name !== 'Mobile Safari';
+  //   // เช็คว่าเป็น iOS และไม่ใช่ Safari
+  //   const isIOS = result.os?.name === 'iOS';
+  //   const isNotSafari = result.browser?.name !== 'Mobile Safari';
 
-    if (isIOS && isNotSafari) {
-      this.isChromeOnIOS = true;
+  //   if (isIOS && isNotSafari) {
+  //     this.isChromeOnIOS = true;
 
-      // 🔄 CASE 1: ขากลับ (Login เสร็จแล้ว มี Code ติดมา) -> ส่งกลับ Safari ด้วย URL สะอาด
-      if (code) {
-        console.log('🔄 Got Code from LINE! Relaying to Safari...');
-        const host = window.location.host;      // เช่น e12-visitor-ionic.vercel.app
-        const path = window.location.pathname;  // เช่น /tabs/profile
+  //     // 🔄 CASE 1: ขากลับ (Login เสร็จแล้ว มี Code ติดมา) -> ส่งกลับ Safari ด้วย URL สะอาด
+  //     if (code) {
+  //       console.log('🔄 Got Code from LINE! Relaying to Safari...');
+  //       const host = window.location.host;      // เช่น e12-visitor-ionic.vercel.app
+  //       const path = window.location.pathname;  // เช่น /tabs/profile
 
-        let cleanUrl = `x-safari-https://${host}${path}?code=${encodeURIComponent(code)}`;
-        if (state) cleanUrl += `&state=${encodeURIComponent(state)}`;
-        if (liffState) cleanUrl += `&liff.state=${encodeURIComponent(liffState)}`;
+  //       let cleanUrl = `x-safari-https://${host}${path}?code=${encodeURIComponent(code)}`;
+  //       if (state) cleanUrl += `&state=${encodeURIComponent(state)}`;
+  //       if (liffState) cleanUrl += `&liff.state=${encodeURIComponent(liffState)}`;
 
-        console.log('✨ Sending Clean URL to Safari:', cleanUrl);
-        window.location.href = cleanUrl;
-        return;
-      }
+  //       console.log('✨ Sending Clean URL to Safari:', cleanUrl);
+  //       window.location.href = cleanUrl;
+  //       return;
+  //     }
 
-      // 🚀 CASE 2: ขาไป (ครั้งแรก ยังไม่มี Code) -> ดีดไป Safari เพื่อเริ่ม Login
-      const currentUrl = window.location.href;
-      if (currentUrl.startsWith('https://')) {
-        const safariUrl = currentUrl.replace('https://', 'x-safari-https://');
-        setTimeout(() => { window.location.href = safariUrl; }, 500);
-      }
-    }
-  }
+  //     // 🚀 CASE 2: ขาไป (ครั้งแรก ยังไม่มี Code) -> ดีดไป Safari เพื่อเริ่ม Login
+  //     const currentUrl = window.location.href;
+  //     if (currentUrl.startsWith('https://')) {
+  //       const safariUrl = currentUrl.replace('https://', 'x-safari-https://');
+  //       setTimeout(() => { window.location.href = safariUrl; }, 500);
+  //     }
+  //   }
+  // }
 
   // --- 🟢 Flow 1: Visitor Register (เก็บไว้ใช้ในอนาคต) ---
   async openVisitorRegister() {
