@@ -319,7 +319,7 @@ export class ProfilePage implements OnInit {
     this.lineProfile = null;
     this.isLoggedIn = false;
     this.currentRole = 'guest';
-    alert('ออกจากระบบเรียบร้อยแล้ว');
+    window.location.reload();
   }
 
   getRoleColor(role: string): string {
