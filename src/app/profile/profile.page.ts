@@ -93,24 +93,21 @@ export class ProfilePage implements OnInit {
 
   async initData() {
     this.isLiffLoading = true;
-    
-    // 1. Init LIFF SDK
-    await this.lineService.initLiff();
 
-    // 2. ตรวจสอบสถานะ Login จริง
-    const _isLoggedIn = this.lineService.isLoggedIn();
-    this.isLoggedIn = _isLoggedIn;
+    try {
+      // 1) Init LIFF (SDK will read 'code' from URL automatically on Safari)
+      await this.lineService.initLiff();
+    } catch (e) {
+      console.error('LIFF Init Error:', e);
+    }
 
-    if (_isLoggedIn) {
-      // ✅ กรณี Login แล้ว: ดึงข้อมูลและ Sync DB
-      console.log('✅ User is logged in (LIFF)');
+    // 2) Check login state
+    if (this.lineService.isLoggedIn()) {
+      // ✅ Logged in via relay
+      console.log('✅ User is logged in via Relay!');
       try {
         this.lineProfile = await this.lineService.getProfile();
-
         if (this.lineProfile) {
-          console.log('👤 Profile:', this.lineProfile.userId);
-          
-          // Sync ลง Database
           const dbUser = await this.authService.syncLineProfile(this.lineProfile);
           if (dbUser) {
             this.currentRole = dbUser.role;
@@ -121,46 +118,61 @@ export class ProfilePage implements OnInit {
         console.error('Error fetching profile:', error);
       }
     } else {
-      // กรณีหลุด Login: สั่ง Auto Login ทันที
-      console.log('🔄 Not logged in. Redirecting to LINE Login...');
-      this.lineService.login(); 
-      // โค้ดจะหยุดทำงานตรงนี้เพราะ Browser จะ Redirect หน้าไปที่อื่น
+      // 🛑 Not logged in: check if URL still has a code (avoid loop)
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('code')) {
+        console.error('❌ Login failed despite having code (Code might be used/expired)');
+        alert('เกิดข้อผิดพลาดในการยืนยันตัวตน กรุณากดปุ่ม "เข้าสู่ระบบ" อีกครั้ง');
+        // Do not call login() here to avoid loop
+      } else {
+        // No code -> begin login flow
+        console.log('🚀 Starting Login Flow...');
+        this.lineService.login();
+      }
     }
 
     this.isLiffLoading = false;
   }
 
-  // เช็ค Browser + Auto Redirect ไป Safari สำหรับ iOSฟ
+  // เช็ค Browser + Auto Redirect ไป Safari สำหรับ iOS
   handleBrowserCheck() {
     const parser = new UAParser();
     const result = parser.getResult();
-    this.browserInfo = result;
+    this.browserInfo = result; // เก็บไว้โชว์ Debug
 
-    // เช็คว่ามี Code callback จาก LIFF หรือไม่
+    // 1) ดึงพารามิเตอร์จาก URL ที่ LINE ส่งมาให้ Chrome
     const params = new URLSearchParams(window.location.search);
-    const isCallback = params.has('code') || params.has('liff.state') || params.has('liffClientId');
-    const currentUrl = window.location.href;
+    const code = params.get('code');
+    const state = params.get('state');
+    const liffState = params.get('liff.state');
 
-    // เงื่อนไข: iOS และไม่ใช่ Mobile Safari (Chrome/Edge/LINE)
-    if (result.os.name === 'iOS' && result.browser.name !== 'Mobile Safari') {
+    // เช็คว่าเป็น iOS และไม่ใช่ Safari
+    const isIOS = result.os?.name === 'iOS';
+    const isNotSafari = result.browser?.name !== 'Mobile Safari';
+
+    if (isIOS && isNotSafari) {
       this.isChromeOnIOS = true;
 
-      // CASE 1: เป็นขากลับ (มี code) -> ส่งกลับ Safari ทันที
-      if (isCallback) {
-        console.log('🔄 Callback landing on Chrome. Relaying back to Safari...');
-        if (currentUrl.startsWith('https://')) {
-          const safariUrl = currentUrl.replace('https://', 'x-safari-https://');
-          window.location.href = safariUrl;
-          return;
-        }
+      // 🔄 CASE 1: ขากลับ (Login เสร็จแล้ว มี Code ติดมา) -> ส่งกลับ Safari ด้วย URL สะอาด
+      if (code) {
+        console.log('🔄 Got Code from LINE! Relaying to Safari...');
+        const host = window.location.host;      // เช่น e12-visitor-ionic.vercel.app
+        const path = window.location.pathname;  // เช่น /tabs/profile
+
+        let cleanUrl = `x-safari-https://${host}${path}?code=${encodeURIComponent(code)}`;
+        if (state) cleanUrl += `&state=${encodeURIComponent(state)}`;
+        if (liffState) cleanUrl += `&liff.state=${encodeURIComponent(liffState)}`;
+
+        console.log('✨ Sending Clean URL to Safari:', cleanUrl);
+        window.location.href = cleanUrl;
+        return;
       }
 
-      // CASE 2: ขาไป (ครั้งแรก) -> ดีดไป Safari เพื่อเริ่ม Login
+      // 🚀 CASE 2: ขาไป (ครั้งแรก ยังไม่มี Code) -> ดีดไป Safari เพื่อเริ่ม Login
+      const currentUrl = window.location.href;
       if (currentUrl.startsWith('https://')) {
         const safariUrl = currentUrl.replace('https://', 'x-safari-https://');
-        setTimeout(() => {
-          window.location.href = safariUrl;
-        }, 500);
+        setTimeout(() => { window.location.href = safariUrl; }, 500);
       }
     }
   }
