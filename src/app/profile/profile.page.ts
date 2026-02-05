@@ -121,7 +121,7 @@ export class ProfilePage implements OnInit {
         console.error('Error fetching profile:', error);
       }
     } else {
-      // 🚀 กรณีหลุด Login: สั่ง Auto Login ทันที (Force Redirect)
+      // กรณีหลุด Login: สั่ง Auto Login ทันที
       console.log('🔄 Not logged in. Redirecting to LINE Login...');
       this.lineService.login(); 
       // โค้ดจะหยุดทำงานตรงนี้เพราะ Browser จะ Redirect หน้าไปที่อื่น
@@ -130,18 +130,34 @@ export class ProfilePage implements OnInit {
     this.isLiffLoading = false;
   }
 
-  // ➕ เช็ค Browser + Auto Redirect ไป Safari สำหรับ iOS (ถ้าเปิดด้วย Chrome/Edge/Line)
+  // เช็ค Browser + Auto Redirect ไป Safari สำหรับ iOSฟ
   handleBrowserCheck() {
     const parser = new UAParser();
     const result = parser.getResult();
     this.browserInfo = result;
 
-    if (result.os?.name === 'iOS' && result.browser?.name !== 'Mobile Safari') {
+    // เช็คว่ามี Code callback จาก LIFF หรือไม่
+    const params = new URLSearchParams(window.location.search);
+    const isCallback = params.has('code') || params.has('liff.state') || params.has('liffClientId');
+    const currentUrl = window.location.href;
+
+    // เงื่อนไข: iOS และไม่ใช่ Mobile Safari (Chrome/Edge/LINE)
+    if (result.os.name === 'iOS' && result.browser.name !== 'Mobile Safari') {
       this.isChromeOnIOS = true;
-      const currentUrl = window.location.href;
+
+      // CASE 1: เป็นขากลับ (มี code) -> ส่งกลับ Safari ทันที
+      if (isCallback) {
+        console.log('🔄 Callback landing on Chrome. Relaying back to Safari...');
+        if (currentUrl.startsWith('https://')) {
+          const safariUrl = currentUrl.replace('https://', 'x-safari-https://');
+          window.location.href = safariUrl;
+          return;
+        }
+      }
+
+      // CASE 2: ขาไป (ครั้งแรก) -> ดีดไป Safari เพื่อเริ่ม Login
       if (currentUrl.startsWith('https://')) {
         const safariUrl = currentUrl.replace('https://', 'x-safari-https://');
-        console.log('🚀 Attempting to redirect to Safari:', safariUrl);
         setTimeout(() => {
           window.location.href = safariUrl;
         }, 500);
