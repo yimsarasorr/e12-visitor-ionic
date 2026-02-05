@@ -315,8 +315,11 @@ export class ProfilePage implements OnInit {
   // ฟังก์ชัน Logout
   logout() {
     this.lineService.logout();
-    // Reload เพื่อเริ่ม Flow Login ใหม่
-    window.location.reload(); 
+    
+    this.lineProfile = null;
+    this.isLoggedIn = false;
+    this.currentRole = 'guest';
+    alert('ออกจากระบบเรียบร้อยแล้ว');
   }
 
   getRoleColor(role: string): string {
