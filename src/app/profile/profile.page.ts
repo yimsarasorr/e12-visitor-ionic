@@ -94,68 +94,41 @@ export class ProfilePage implements OnInit {
   async initData() {
     this.isLiffLoading = true;
 
-    // 📨 ฝั่งคนรับ (Safari): รับข้อมูลจาก LIFF ผ่าน bridge_user
-    const params = new URLSearchParams(window.location.search);
-    const bridgeData = params.get('bridge_user');
-
-    if (bridgeData) {
-      console.log('🚀 Received Data from LIFF Bridge!');
-      try {
-        const userData = JSON.parse(atob(bridgeData));
-        this.lineProfile = userData;
-        this.isLoggedIn = true;
-
-        const dbUser = await this.authService.syncLineProfile(this.lineProfile);
-        if (dbUser) this.currentRole = dbUser.role;
-
-        console.log('✅ Manual Login Success via Bridge');
-        this.isLiffLoading = false;
-        return;
-      } catch (e) {
-        console.error('Bridge Data Error:', e);
-      }
+    try {
+      // 1) Init LIFF (SDK will read 'code' from URL automatically on Safari)
+      await this.lineService.initLiff();
+    } catch (e) {
+      console.error('LIFF Init Error:', e);
     }
 
-    // 📤 ฝั่งคนส่ง (LIFF ใน LINE): Login แล้วส่งค่าไป Safari
-    try {
-      await this.lineService.initLiff();
-
-      const parser = new UAParser();
-      const result = parser.getResult();
-      const isLineBrowser = (result.browser.name?.includes('Line') || result.ua?.includes('Line'));
-
-      if (this.lineService.isLoggedIn() && isLineBrowser) {
-        const profile = await this.lineService.getProfile();
-
-        const dataToSend = {
-          userId: profile.userId,
-          displayName: profile.displayName,
-          pictureUrl: profile.pictureUrl
-        };
-        const encodedData = btoa(JSON.stringify(dataToSend));
-
-        const targetUrl = window.location.href.split('?')[0];
-        const safariUrl = targetUrl.replace('https://', 'x-safari-https://') + `?bridge_user=${encodedData}`;
-
-        console.log('📤 Bridging to Safari...');
-        window.location.href = safariUrl;
-        return;
-      }
-
-      // โหมดทั่วไป: เปิดใน Browser อื่น
-      if (this.lineService.isLoggedIn()) {
+    // 2) Check login state
+    if (this.lineService.isLoggedIn()) {
+      // ✅ Logged in via relay
+      console.log('✅ User is logged in via Relay!');
+      try {
         this.lineProfile = await this.lineService.getProfile();
         if (this.lineProfile) {
           const dbUser = await this.authService.syncLineProfile(this.lineProfile);
-          if (dbUser) this.currentRole = dbUser.role;
+          if (dbUser) {
+            this.currentRole = dbUser.role;
+            console.log('🏷️ Role from DB:', this.currentRole);
+          }
         }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+      }
+    } else {
+      // 🛑 Not logged in: check if URL still has a code (avoid loop)
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('code')) {
+        console.error('❌ Login failed despite having code (Code might be used/expired)');
+        alert('เกิดข้อผิดพลาดในการยืนยันตัวตน กรุณากดปุ่ม "เข้าสู่ระบบ" อีกครั้ง');
+        // Do not call login() here to avoid loop
       } else {
         // No code -> begin login flow
         console.log('🚀 Starting Login Flow...');
         this.lineService.login();
       }
-    } catch (e) {
-      console.error(e);
     }
 
     this.isLiffLoading = false;
