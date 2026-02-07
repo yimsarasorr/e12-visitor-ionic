@@ -1,6 +1,6 @@
 /* พื้นหลัง */
 .bg-light {
-  --background: #f2f2f7; /* iOS Gray Background */
+  --background: #f2f2f7;
 }
 
 /* Calendar Section */
@@ -11,7 +11,7 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  min-height: 100px; /* กำหนดความสูงขั้นต่ำไว้เลยเพื่อกันกระโดด */
+  min-height: 100px;
 }
 
 .calendar-header {
@@ -43,33 +43,33 @@
   justify-content: space-between;
   padding: 0 12px;
   margin-top: 4px;
-  will-change: transform; /* แยก render layer เพื่อให้แอนิเมชันลื่นขึ้น */
-  width: 100%; /* ให้เต็มพื้นที่ของ wrapper */
+  will-change: transform;
+  width: 100%;
 }
 
 .week-strip-wrapper {
   overflow: hidden;
   width: 100%;
-  padding-bottom: 4px; /* [เพิ่ม] เว้นระยะด้านล่างของ wrapper */
+  padding-bottom: 4px;
 }
 
 .day-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start; /* อิงด้านบนเป็นหลัก */
-  width: 44px; /* กว้างขึ้นให้กดง่าย */
-  height: 72px; /* ฟิกความสูงไว้เลย */
+  justify-content: flex-start; 
+  width: 44px; 
+  height: 72px;
   padding-top: 6px;
   cursor: pointer;
   border-radius: 20px;
 
   .day-name {
     font-size: 0.7rem;
-    color: #8e8e93; /* iOS Gray */
+    color: #8e8e93;
     margin-bottom: 4px;
     font-weight: 500;
-    height: 14px; /* ฟิกความสูงตัวหนังสือ */
+    height: 14px;
   }
 
   .day-number {
@@ -85,7 +85,7 @@
     margin-bottom: 4px;
   }
 
-  /* กล่องเก็บจุด Event (จองพื้นที่ไว้เสมอ) */
+  /* กล่องเก็บจุด Event */
   .event-indicator {
     height: 6px;
     display: flex;
@@ -93,7 +93,7 @@
     justify-content: center;
   }
 
-  /* จุด Event สีเทาๆ (สไตล์ iOS) */
+  /* จุด Event สีเทาๆ  */
   .event-dot {
     width: 5px;
     height: 5px;
@@ -109,7 +109,7 @@
     }
   }
 
-  /* State: Selected (ชนะทุกอย่าง) */
+  /* State: Selected  */
   &.selected {
     .day-number {
       background: #000;
@@ -124,7 +124,7 @@
     }
 
     .event-dot {
-      background-color: #8e8e93; /* คงสีจุดให้คงที่ */
+      background-color: #8e8e93;
     }
   }
 }
@@ -220,7 +220,6 @@
 
 .extra-space { height: 80px; }
 
-/* เพิ่ม Class นี้ตามที่ใช้ใน HTML */
 .add-icon-large {
   font-size: 28px;
 }

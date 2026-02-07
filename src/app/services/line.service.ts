@@ -17,21 +17,18 @@ export class LineService {
     try {
       await liff.init({
         liffId: this.LIFF_ID
-        // withLoginOnExternalBrowser: true // removed to prevent auto redirect
       });
     } catch (error) {
       console.error('LIFF Init Error:', error);
     }
   }
 
-  // ✅ เพิ่มฟังก์ชัน Login ธรรมดา (ให้ผู้ใช้กดเอง)
   login() {
     if (!liff.isLoggedIn()) {
       liff.login({ redirectUri: window.location.href });
     }
   }
 
-  // ✅ wrapper สำหรับเช็คสถานะ login
   isLoggedIn(): boolean {
     return liff.isLoggedIn();
   }
@@ -47,7 +44,6 @@ export class LineService {
     return null;
   }
   
-  // ✅ เพิ่ม Logout
   logout() {
     if (liff.isLoggedIn()) {
       liff.logout();
@@ -55,10 +51,8 @@ export class LineService {
     }
   }
 
-  // ✅ เพิ่ม Switch Menu
   async switchMenu(role: string) {
     try {
-      // ถ้าเปิดใน Browser แล้วยัง Login ไม่เสร็จ ให้หยุดทำงานก่อน
       if (!liff.isLoggedIn()) {
         console.warn('User not logged in LIFF');
         return false;
@@ -104,7 +98,6 @@ export class LineService {
     return urlParams.get('code');
   }
 
-  // ✅ ฟังก์ชันสร้าง Link กลับ LINE OA
   getLineOALink(): string {
     return `https://line.me/R/ti/p/${this.LINE_OA_ID}`;
   }

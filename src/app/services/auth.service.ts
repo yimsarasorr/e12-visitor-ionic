@@ -32,7 +32,7 @@ export class AuthService {
   }
 
   // ==========================================
-  // 🟢 ส่วนใหม่: สำหรับ Register & Rich Menu Flow
+  // ส่วนใหม่: สำหรับ Register & Rich Menu Flow
   // ==========================================
 
   // 1. Sync User จาก LINE ลง DB (ใช้ตอนเปิดแอป)
@@ -103,7 +103,7 @@ export class AuthService {
   }
 
   // ==========================================
-  // 🟡 Logic เช็คสิทธิ์ประตู 
+  // Logic เช็คสิทธิ์ประตู 
   // ==========================================
 
   getRoles(): Observable<RolePermission[]> {
@@ -126,7 +126,7 @@ export class AuthService {
   getUsers(): Observable<UserProfile[]> {
     const request = this.supabase
       .from('profiles')
-      .select('id, full_name, is_staff') // หมายเหตุ: ถ้า column เปลี่ยนเป็น role แล้ว อาจจะต้องแก้ตรงนี้ในอนาคต
+      .select('id, full_name, is_staff') 
       .order('is_staff', { ascending: false });
 
     return from(request).pipe(
@@ -134,7 +134,7 @@ export class AuthService {
         if (response.error || !response.data) return [];
         return response.data.map((u: any) => ({
           id: u.id,
-          full_name: u.full_name || u.display_name, // fallback เผื่อใช้ field ใหม่
+          full_name: u.full_name || u.display_name,
           is_staff: u.is_staff,
           role_label: `${u.full_name} (${u.is_staff ? 'Staff' : 'Visitor'})`
         }));

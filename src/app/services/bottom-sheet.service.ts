@@ -9,7 +9,7 @@ export type ExpansionState = 'peek' | 'partial' | 'default' | 'expanded';
 // โครงสร้างข้อมูลที่จะส่งมา
 export interface SheetData {
   mode: SheetMode;
-  data?: any; // ข้อมูลดิบ (เช่น list ตึก, list ห้อง, หรือ detail ตึก)
+  data?: any; // list ตึก, list ห้อง, หรือ detail ตึก
   title?: string;
 }
 

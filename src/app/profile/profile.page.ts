@@ -19,6 +19,7 @@ import { UAParser } from 'ua-parser-js';
 // Import Services
 import { LineService } from '../services/line.service';
 import { AuthService } from '../services/auth.service';
+
 // Import Components
 import { VisitorRegistrationModalComponent } from '../components/ui/visitor-registration-modal/visitor-registration-modal.component';
 import { FastpassHeaderComponent } from '../components/ui/fastpass-header/fastpass-header.component';
@@ -29,22 +30,22 @@ import { FastpassHeaderComponent } from '../components/ui/fastpass-header/fastpa
   styleUrls: ['./profile.page.scss'],
   standalone: true,
   imports: [
-    IonSpinner, IonButtons, 
-    CommonModule, FormsModule, IonContent, IonHeader, IonTitle, IonToolbar, 
-    IonList, IonItem, IonIcon, IonLabel, IonAvatar, IonButton, IonCard, 
-    IonCardContent, IonBadge, IonCardHeader, IonCardSubtitle, IonNote,
+    IonSpinner,
+    CommonModule, FormsModule, IonContent,
+    IonItem, IonIcon, IonLabel, IonAvatar, IonButton, IonCard,
+    IonCardContent, IonBadge, IonCardHeader, IonCardSubtitle,
     IonSegment, IonSegmentButton, FastpassHeaderComponent
-  ]
+]
 })
 export class ProfilePage implements OnInit {
 
-  currentRole: string = 'guest'; // default role
+  currentRole: string = 'guest';
   lineProfile: any = null;
   isLiffLoading = false;
   isLoggedIn = false;
   selectedTab = 'dashboard';
 
-  // ➕ Debug & Browser Check
+  // Debug & Browser Check
   browserInfo: any = null;
   isChromeOnIOS = false;
 
@@ -55,7 +56,7 @@ export class ProfilePage implements OnInit {
     private loadingCtrl: LoadingController,
     private alertCtrl: AlertController
   ) { 
-    // Add Icons
+
     addIcons({
       logOutOutline, cardOutline, qrCodeOutline, 
       chatbubblesOutline, refreshOutline, logInOutline, 
@@ -65,23 +66,20 @@ export class ProfilePage implements OnInit {
   }
 
   async ngOnInit() {
-    // ➕ เช็ค Browser/OS และพยายามดีดไป Safari บน iOS ถ้าไม่ใช่ Mobile Safari
     await this.initData();
   }
 
   copyCurrentLink() {
     const url = window.location.href;
-    // ใช้ API Clipboard ของ Browser
     navigator.clipboard.writeText(url).then(() => {
-      alert('คัดลอกลิงก์แล้ว! กรุณานำไปเปิดใน Safari');
+      alert('คัดลอกลิงก์แล้ว');
     }).catch(err => {
       console.error('Copy failed', err);
-      // Fallback เผื่อบาง Browser ไม่รองรับ
       alert('ไม่สามารถคัดลอกได้: ' + url);
     });
   }
 
-  // ✅ ฟังก์ชัน Copy User ID (แก้ Error: copyUserId does not exist)
+  // ฟังก์ชัน Copy User ID
   copyUserId() {
     if (this.lineProfile?.userId) {
       navigator.clipboard.writeText(this.lineProfile.userId).then(() => {
@@ -93,12 +91,12 @@ export class ProfilePage implements OnInit {
   async initData() {
     this.isLiffLoading = true;
 
-    // 📥 ฝั่งรับ: ตรวจ bridge_user ใน URL (Safari/Chrome หลังถูกดีดมา)
+    // ฝั่งรับ ตรวจ bridge_user ใน URL (Safari/Chrome หลังถูกดีดมา)
     const params = new URLSearchParams(window.location.search);
     const bridgeData = params.get('bridge_user');
 
     if (bridgeData) {
-      console.log('🚀 Received Data via Bridge!');
+      console.log('Received Data via Bridge!');
       try {
         const jsonString = decodeURIComponent(atob(bridgeData));
         const userData = JSON.parse(jsonString);
@@ -109,9 +107,9 @@ export class ProfilePage implements OnInit {
         const dbUser = await this.authService.syncLineProfile(this.lineProfile);
         if (dbUser) this.currentRole = dbUser.role;
 
-        console.log('✅ Bridge Login Success');
+        console.log('Bridge Login Success');
 
-        // ลบ query ออกจาก URL ให้กลับเป็นสะอาด
+        // ลบ query ออกจาก URL
         const cleanUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}`;
         window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
 
@@ -122,7 +120,7 @@ export class ProfilePage implements OnInit {
       }
     }
 
-    // 📤 ฝั่งส่ง: ทำงานใน LINE App เท่านั้น
+    // ฝั่งส่ง ทำงานใน LINE App
     try {
       await this.lineService.initLiff();
 
@@ -134,7 +132,7 @@ export class ProfilePage implements OnInit {
         (this.lineService.isLoggedIn() && (result.browser.name?.includes('Line') ?? false));
 
       if (this.lineService.isLoggedIn() && isInLineApp) {
-        console.log('⚡️ Starting Bridge Protocol...');
+        console.log('Starting Bridge Protocol...');
 
         const profile = await this.lineService.getProfile();
         const dataToSend = JSON.stringify({
@@ -150,16 +148,16 @@ export class ProfilePage implements OnInit {
 
         if (result.os.name === 'iOS') {
           // iOS -> Safari
-          console.log('🍎 iOS: Bouncing to Safari...');
+          console.log('iOS: Bouncing to Safari...');
           const safariUrl = targetUrl.replace('https://', 'x-safari-https://');
           window.location.href = safariUrl;
         } else if (result.os.name === 'Android') {
           // Android -> Chrome via intent
-          console.log('🤖 Android: Bouncing to Chrome...');
+          console.log('Android: Bouncing to Chrome...');
           const intent = `intent://${pureUrl}#Intent;scheme=https;package=com.android.chrome;end`;
           window.location.href = intent;
         } else {
-          // Desktop/others: stay and proceed normally
+          // Desktop/others stay and proceed normally
           this.lineProfile = profile;
           const dbUser = await this.authService.syncLineProfile(this.lineProfile);
           if (dbUser) this.currentRole = dbUser.role;
@@ -167,7 +165,7 @@ export class ProfilePage implements OnInit {
         return;
       }
 
-      // 🌐 กรณีทั่วไป: เปิดตรงใน Safari/Chrome
+      // กรณีทั่วไป: เปิดตรงใน Safari/Chrome
       if (this.lineService.isLoggedIn()) {
         this.lineProfile = await this.lineService.getProfile();
         const dbUser = await this.authService.syncLineProfile(this.lineProfile);
@@ -201,9 +199,9 @@ export class ProfilePage implements OnInit {
   //   if (isIOS && isNotSafari) {
   //     this.isChromeOnIOS = true;
 
-  //     // 🔄 CASE 1: ขากลับ (Login เสร็จแล้ว มี Code ติดมา) -> ส่งกลับ Safari ด้วย URL สะอาด
+  //     // CASE 1: ขากลับ (Login เสร็จแล้ว มี Code ติดมา) -> ส่งกลับ Safari ด้วย URL สะอาด
   //     if (code) {
-  //       console.log('🔄 Got Code from LINE! Relaying to Safari...');
+  //       console.log('Got Code from LINE! Relaying to Safari...');
   //       const host = window.location.host;      // เช่น e12-visitor-ionic.vercel.app
   //       const path = window.location.pathname;  // เช่น /tabs/profile
 
@@ -211,12 +209,12 @@ export class ProfilePage implements OnInit {
   //       if (state) cleanUrl += `&state=${encodeURIComponent(state)}`;
   //       if (liffState) cleanUrl += `&liff.state=${encodeURIComponent(liffState)}`;
 
-  //       console.log('✨ Sending Clean URL to Safari:', cleanUrl);
+  //       console.log('Sending Clean URL to Safari:', cleanUrl);
   //       window.location.href = cleanUrl;
   //       return;
   //     }
 
-  //     // 🚀 CASE 2: ขาไป (ครั้งแรก ยังไม่มี Code) -> ดีดไป Safari เพื่อเริ่ม Login
+  //     // CASE 2: ขาไป (ครั้งแรก ยังไม่มี Code) -> ดีดไป Safari เพื่อเริ่ม Login
   //     const currentUrl = window.location.href;
   //     if (currentUrl.startsWith('https://')) {
   //       const safariUrl = currentUrl.replace('https://', 'x-safari-https://');
@@ -225,7 +223,7 @@ export class ProfilePage implements OnInit {
   //   }
   // }
 
-  // --- 🟢 Flow 1: Visitor Register (เก็บไว้ใช้ในอนาคต) ---
+  // --- Flow 1: Visitor Register (ยังไม่ implement) ---
   async openVisitorRegister() {
     const modal = await this.modalCtrl.create({
       component: VisitorRegistrationModalComponent,
@@ -248,7 +246,7 @@ export class ProfilePage implements OnInit {
     }
   }
 
-  // --- 🟠 Flow 2: KMITL Login (Mock) (เก็บไว้ใช้ในอนาคต) ---
+  // --- Flow 2: KMITL Login (Mock) (ยังไม่ implement) ---
   async openKmitlLogin() {
     const alert = await this.alertCtrl.create({
       header: 'KMITL SSO Login',
@@ -282,7 +280,7 @@ export class ProfilePage implements OnInit {
     await this.confirmRoleChange(newRole, extraData);
   }
 
-  // --- 🔄 Shared Logic: บันทึก Role และเปลี่ยนเมนู ---
+  // --- Shared Logic: บันทึก Role และเปลี่ยนเมนู ---
   async confirmRoleChange(newRole: string, extraData: any) {
     const loading = await this.loadingCtrl.create({ message: 'กำลังบันทึกข้อมูล...' });
     await loading.present();
@@ -312,7 +310,7 @@ export class ProfilePage implements OnInit {
     }
   }
 
-  // ฟังก์ชัน Logout
+  //ฟังก์ชัน Logout
   logout() {
     this.lineService.logout();
     
@@ -331,7 +329,7 @@ export class ProfilePage implements OnInit {
     }
   }
 
-  // ✅ 🔧 Dev Tools: Force Switch Role (ใช้สำหรับปุ่ม 4 ปุ่มด้านล่าง)
+  // ✅ Dev Tools: Force Switch Role
   async debugSwitchRole(role: string): Promise<void> {
     const loading = await this.loadingCtrl.create({ message: `Dev Force: ${role}...` });
     await loading.present();
@@ -343,7 +341,7 @@ export class ProfilePage implements OnInit {
       if (success) {
         this.currentRole = role;
 
-        // 2. อัปเดต DB ให้ตรงกัน
+        // 2. อัปเดต DB 
         if (this.lineProfile?.userId) {
           await this.authService.updateProfile(this.lineProfile.userId, { role });
         }

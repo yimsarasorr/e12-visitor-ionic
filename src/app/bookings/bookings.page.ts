@@ -34,14 +34,14 @@ export class BookingsPage implements OnInit, AfterViewInit, OnDestroy {
 
   @ViewChild('calendarStrip', { read: ElementRef }) calendarStripRef!: ElementRef;
   private gesture?: Gesture;
-  private isAnimating = false; // กันผู้ใช้ปัดซ้ำระหว่างกำลังเปลี่ยนวีค
+  private isAnimating = false;
 
-  currentWeekStart: Date = new Date(); // วันอาทิตย์เริ่มต้นของสัปดาห์
+  currentWeekStart: Date = new Date();
   weekDays: CalendarDate[] = [];
   selectedDate: string = '';
   currentMonthLabel: string = '';
 
-  // Mock Data (ใส่ให้ครบ Type)
+  // Mock Data
   allBookings: any[] = [
     {
       id: 1,
@@ -78,13 +78,12 @@ export class BookingsPage implements OnInit, AfterViewInit, OnDestroy {
     private modalCtrl: ModalController,
     private gestureCtrl: GestureController,
     private renderer: Renderer2,
-    private ngZone: NgZone // Inject NgZone
+    private ngZone: NgZone
   ) {
     addIcons({ addOutline, timeOutline, calendarOutline, chevronBackOutline, chevronForwardOutline });
   }
 
   ngOnInit() {
-    // หาวันอาทิตย์เริ่มต้นสัปดาห์ของวันนี้
     const today = new Date();
     const day = today.getDay(); // 0 (Sun) - 6 (Sat)
     this.currentWeekStart = new Date(today);
@@ -94,7 +93,7 @@ export class BookingsPage implements OnInit, AfterViewInit, OnDestroy {
     this.selectDate(today.toISOString().split('T')[0]);
   }
 
-  // เริ่มระบบปัดหลัง View โหลดเสร็จ (ต้องมี #calendarStrip ใน HTML บนคอมโพเนนต์แถบสัปดาห์)
+  // เริ่มระบบปัดหลัง View โหลดเสร็จ
   ngAfterViewInit() {
     this.initSwipeGesture();
   }
@@ -103,7 +102,7 @@ export class BookingsPage implements OnInit, AfterViewInit, OnDestroy {
     if (this.gesture) this.gesture.destroy();
   }
 
-  // สร้างระบบปัดซ้าย/ขวา เพื่อเปลี่ยนสัปดาห์ (Follow Finger + Animate)
+  // ระบบปัดซ้าย/ขวา เพื่อเปลี่ยนสัปดาห์
   initSwipeGesture() {
     if (!this.calendarStripRef) return;
     const element = this.calendarStripRef.nativeElement;
@@ -111,10 +110,9 @@ export class BookingsPage implements OnInit, AfterViewInit, OnDestroy {
     this.gesture = this.gestureCtrl.create({
       el: element,
       gestureName: 'swipe-calendar',
-      threshold: 5, // แตะนิดเดียวก็เริ่มขยับ
+      threshold: 5,
       direction: 'x',
       onStart: () => {
-        // ปิด Transition ชั่วคราวเพื่อให้ตามนิ้วแบบเนียน
         this.renderer.setStyle(element, 'transition', 'none');
       },
       onMove: (ev) => {

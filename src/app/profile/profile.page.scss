@@ -68,24 +68,24 @@
   gap: 10px;
 }
 
-/* 1) พื้นหลังทั้งหน้า */
+/* พื้นหลังทั้งหน้า */
 .bg-main {
   --background: #f8f9fd;
 }
 
-/* 2) Header พื้นหลังขาว */
+/* Header พื้นหลังขาว */
 ion-header {
   background: #fff;
   ion-toolbar { --background: #fff; }
 }
 
-/* 3) ส่วนบนใต้ Header */
+/* ส่วนบนใต้ Header */
 .top-section {
   background: #fff;
   border-bottom: 1px solid #e0e0e0;
 }
 
-/* 4) การ์ดผู้ใช้สไตล์ Figma */
+/* การ์ดผู้ใช้สไตล์ Figma */
 .figma-user-card {
   margin: 0 0 20px 0;
   width: 100%;
@@ -127,7 +127,7 @@ ion-header {
   }
 }
 
-/* 5) Tabs (Segment) */
+/* Tabs (Segment) */
 .figma-tabs {
   background: transparent;
 
@@ -175,7 +175,7 @@ ion-header {
   }
 }
 
-/* ➕ Warning Banner Style */
+/* Warning Banner Style */
 .warning-banner {
   background: #fffbeb; 
   border: 1px solid #fcd34d; 
@@ -184,7 +184,7 @@ ion-header {
   ion-icon { margin-right: 10px; margin-left: 10px; }
 }
 
-/* ➕ Debug User ID (ตัวแดงเล็กๆ ในการ์ด) */
+/* Debug User ID */
 .debug-userid {
   font-size: 0.65rem; 
   color: #ef4444; 
@@ -200,10 +200,10 @@ ion-header {
   ion-icon { font-size: 0.8rem; }
 }
 
-/* ➕ Browser Debug Box (กล่องดำ Hacker) */
+/* Browser Debug Box */
 .browser-debug-box {
   background: #1e293b;
-  color: #4ade80; /* สีเขียว */
+  color: #4ade80;
   padding: 15px;
   border-radius: 12px;
   font-family: monospace;
