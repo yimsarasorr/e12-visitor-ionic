@@ -6,15 +6,15 @@ import {
   IonIcon, IonLabel, IonAvatar, IonButton, IonCard, IonCardContent, 
   IonBadge, IonCardHeader, IonCardSubtitle, IonNote, 
   ModalController, LoadingController, AlertController, IonButtons, IonSpinner, 
-  IonSegment, IonSegmentButton
+  IonSegment, IonSegmentButton, IonGrid, IonRow, IonCol
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { 
   peopleOutline, schoolOutline, logOutOutline, cardOutline, 
   chatbubblesOutline, logInOutline, qrCodeOutline, refreshOutline, 
-  chevronForwardOutline, alertCircleOutline, bugOutline, copyOutline
+  chevronForwardOutline, alertCircleOutline, bugOutline, copyOutline,
+  personOutline, globeOutline
 } from 'ionicons/icons';
-import { UAParser } from 'ua-parser-js';
 
 // Import Services
 import { LineService } from '../services/line.service';
@@ -30,24 +30,20 @@ import { FastpassHeaderComponent } from '../components/ui/fastpass-header/fastpa
   styleUrls: ['./profile.page.scss'],
   standalone: true,
   imports: [
-    IonSpinner,
+    IonSpinner, IonGrid, IonRow, IonCol,
     CommonModule, FormsModule, IonContent,
     IonItem, IonIcon, IonLabel, IonAvatar, IonButton, IonCard,
     IonCardContent, IonBadge, IonCardHeader, IonCardSubtitle,
     IonSegment, IonSegmentButton, FastpassHeaderComponent
-]
+  ]
 })
 export class ProfilePage implements OnInit {
 
   currentRole: string = 'guest';
   lineProfile: any = null;
   isLiffLoading = false;
-  isLoggedIn = false;
+  isLoggedIn = false; // ใช้คุม State หน้า Landing vs Dashboard
   selectedTab = 'dashboard';
-
-  // Debug & Browser Check
-  browserInfo: any = null;
-  isChromeOnIOS = false;
 
   constructor(
     private lineService: LineService,
@@ -56,17 +52,58 @@ export class ProfilePage implements OnInit {
     private loadingCtrl: LoadingController,
     private alertCtrl: AlertController
   ) { 
-
     addIcons({
       logOutOutline, cardOutline, qrCodeOutline, 
       chatbubblesOutline, refreshOutline, logInOutline, 
       peopleOutline, schoolOutline, chevronForwardOutline,
-      alertCircleOutline, bugOutline, copyOutline
+      alertCircleOutline, bugOutline, copyOutline,
+      personOutline, globeOutline
     });
   }
 
   async ngOnInit() {
     await this.initData();
+  }
+
+  private async initData() {
+    this.isLiffLoading = true;
+    try {
+      await this.lineService.initLiff();
+      if (this.lineService.isLoggedIn()) {
+        console.log('User is already logged in LINE.');
+        await this.fetchUserProfile();
+      } else {
+        console.log('User is NOT logged in. Show Landing Page.');
+      }
+    } catch (error) {
+      console.error('LIFF Init Error:', error);
+    } finally {
+      this.isLiffLoading = false;
+    }
+  }
+
+  async loginWithLine() {
+    this.lineService.login();
+  }
+
+  async continueAsGuest() {
+    this.lineProfile = {
+      userId: this.generateGuestId(),
+      displayName: 'Guest User',
+      pictureUrl: 'assets/shapes.svg'
+    };
+    this.isLoggedIn = true;
+    this.currentRole = 'guest';
+    await this.ensureGuestProfileRecord();
+  }
+
+  async fetchUserProfile() {
+    this.lineProfile = await this.lineService.getProfile();
+    if (this.lineProfile) {
+      this.isLoggedIn = true;
+      const dbUser = await this.authService.syncLineProfile(this.lineProfile);
+      if (dbUser?.role) this.currentRole = dbUser.role;
+    }
   }
 
   copyCurrentLink() {
@@ -88,153 +125,19 @@ export class ProfilePage implements OnInit {
     }
   }
 
-  async initData() {
-    this.isLiffLoading = true;
-
-    // ฝั่งรับ ตรวจ bridge_user ใน URL (Safari/Chrome หลังถูกดีดมา)
-    const params = new URLSearchParams(window.location.search);
-    const bridgeData = params.get('bridge_user');
-
-    if (bridgeData) {
-      console.log('Received Data via Bridge!');
-      try {
-        const jsonString = decodeURIComponent(atob(bridgeData));
-        const userData = JSON.parse(jsonString);
-
-        this.lineProfile = userData;
-        this.isLoggedIn = true;
-
-        const dbUser = await this.authService.syncLineProfile(this.lineProfile);
-        if (dbUser) this.currentRole = dbUser.role;
-
-        console.log('Bridge Login Success');
-
-        // ลบ query ออกจาก URL
-        const cleanUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}`;
-        window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
-
-        this.isLiffLoading = false;
-        return;
-      } catch (e) {
-        console.error('Bridge Data Error:', e);
-      }
-    }
-
-    // ฝั่งส่ง ทำงานใน LINE App
-    try {
-      await this.lineService.initLiff();
-
-      const parser = new UAParser();
-      const result = parser.getResult();
-
-      const isInLineApp =
-        result.ua.includes('Line') ||
-        (this.lineService.isLoggedIn() && (result.browser.name?.includes('Line') ?? false));
-
-      if (this.lineService.isLoggedIn() && isInLineApp) {
-        console.log('Starting Bridge Protocol...');
-
-        const profile = await this.lineService.getProfile();
-        const dataToSend = JSON.stringify({
-          userId: profile.userId,
-          displayName: profile.displayName,
-          pictureUrl: profile.pictureUrl
-        });
-        const safeData = encodeURIComponent(btoa(dataToSend));
-
-        const baseUrl = window.location.href.split('?')[0];
-        const targetUrl = `${baseUrl}?bridge_user=${safeData}`;
-        const pureUrl = targetUrl.replace('https://', '').replace('http://', '');
-
-        if (result.os.name === 'iOS') {
-          // iOS -> Safari
-          console.log('iOS: Bouncing to Safari...');
-          const safariUrl = targetUrl.replace('https://', 'x-safari-https://');
-          window.location.href = safariUrl;
-        } else if (result.os.name === 'Android') {
-          // Android -> Chrome via intent
-          console.log('Android: Bouncing to Chrome...');
-          const intent = `intent://${pureUrl}#Intent;scheme=https;package=com.android.chrome;end`;
-          window.location.href = intent;
-        } else {
-          // Desktop/others stay and proceed normally
-          this.lineProfile = profile;
-          const dbUser = await this.authService.syncLineProfile(this.lineProfile);
-          if (dbUser) this.currentRole = dbUser.role;
-        }
-        return;
-      }
-
-      // กรณีทั่วไป: เปิดตรงใน Safari/Chrome
-      if (this.lineService.isLoggedIn()) {
-        this.lineProfile = await this.lineService.getProfile();
-        const dbUser = await this.authService.syncLineProfile(this.lineProfile);
-        if (dbUser) this.currentRole = dbUser.role;
-      } else {
-        this.lineService.login();
-      }
-    } catch (e) {
-      console.error(e);
-    }
-
-    this.isLiffLoading = false;
+  // ฟังก์ชันเปิด LINE OA (ลิงก์ External)
+  openLineOA(): void {
+    const link = this.lineService.getLineOALink();
+    window.open(link, '_system');
   }
 
-  // // เช็ค Browser + Auto Redirect ไป Safari สำหรับ iOS
-  // handleBrowserCheck() {
-  //   const parser = new UAParser();
-  //   const result = parser.getResult();
-  //   this.browserInfo = result; // เก็บไว้โชว์ Debug
-
-  //   // 1) ดึงพารามิเตอร์จาก URL ที่ LINE ส่งมาให้ Chrome
-  //   const params = new URLSearchParams(window.location.search);
-  //   const code = params.get('code');
-  //   const state = params.get('state');
-  //   const liffState = params.get('liff.state');
-
-  //   // เช็คว่าเป็น iOS และไม่ใช่ Safari
-  //   const isIOS = result.os?.name === 'iOS';
-  //   const isNotSafari = result.browser?.name !== 'Mobile Safari';
-
-  //   if (isIOS && isNotSafari) {
-  //     this.isChromeOnIOS = true;
-
-  //     // CASE 1: ขากลับ (Login เสร็จแล้ว มี Code ติดมา) -> ส่งกลับ Safari ด้วย URL สะอาด
-  //     if (code) {
-  //       console.log('Got Code from LINE! Relaying to Safari...');
-  //       const host = window.location.host;      // เช่น e12-visitor-ionic.vercel.app
-  //       const path = window.location.pathname;  // เช่น /tabs/profile
-
-  //       let cleanUrl = `x-safari-https://${host}${path}?code=${encodeURIComponent(code)}`;
-  //       if (state) cleanUrl += `&state=${encodeURIComponent(state)}`;
-  //       if (liffState) cleanUrl += `&liff.state=${encodeURIComponent(liffState)}`;
-
-  //       console.log('Sending Clean URL to Safari:', cleanUrl);
-  //       window.location.href = cleanUrl;
-  //       return;
-  //     }
-
-  //     // CASE 2: ขาไป (ครั้งแรก ยังไม่มี Code) -> ดีดไป Safari เพื่อเริ่ม Login
-  //     const currentUrl = window.location.href;
-  //     if (currentUrl.startsWith('https://')) {
-  //       const safariUrl = currentUrl.replace('https://', 'x-safari-https://');
-  //       setTimeout(() => { window.location.href = safariUrl; }, 500);
-  //     }
-  //   }
-  // }
-
-  // --- Flow 1: Visitor Register (ยังไม่ implement) ---
   async openVisitorRegister() {
     const modal = await this.modalCtrl.create({
       component: VisitorRegistrationModalComponent,
-      componentProps: { 
-        currentUserId: this.lineProfile?.userId 
-      }
+      componentProps: { currentUserId: this.lineProfile?.userId ?? null }
     });
     await modal.present();
-
     const { data } = await modal.onWillDismiss();
-    
     if (data?.registered) {
       this.currentRole = 'visitor';
       const successAlert = await this.alertCtrl.create({
@@ -246,7 +149,6 @@ export class ProfilePage implements OnInit {
     }
   }
 
-  // --- Flow 2: KMITL Login (Mock) (ยังไม่ implement) ---
   async openKmitlLogin() {
     const alert = await this.alertCtrl.create({
       header: 'KMITL SSO Login',
@@ -271,38 +173,28 @@ export class ProfilePage implements OnInit {
   }
 
   async processKmitlLogin(username: string) {
-    let newRole = 'user'; 
+    let newRole = 'user';
     if (username.startsWith('9')) newRole = 'host';
-
-    const extraData = {
-      department: 'Engineering'
-    };
-    await this.confirmRoleChange(newRole, extraData);
+    await this.confirmRoleChange(newRole, { department: 'Engineering' });
   }
 
-  // --- Shared Logic: บันทึก Role และเปลี่ยนเมนู ---
   async confirmRoleChange(newRole: string, extraData: any) {
     const loading = await this.loadingCtrl.create({ message: 'กำลังบันทึกข้อมูล...' });
     await loading.present();
-
     try {
       const updateData = { role: newRole, ...extraData };
       if (this.lineProfile?.userId) {
-         await this.authService.updateProfile(this.lineProfile.userId, updateData);
+        await this.authService.updateProfile(this.lineProfile.userId, updateData);
       }
-
       await this.lineService.switchMenu(newRole);
       this.currentRole = newRole;
-      
       await loading.dismiss();
-      
       const successAlert = await this.alertCtrl.create({
         header: 'สำเร็จ',
         message: `เปลี่ยนสถานะเป็น: ${newRole.toUpperCase()} เรียบร้อย`,
         buttons: ['ตกลง']
       });
       await successAlert.present();
-
     } catch (error) {
       await loading.dismiss();
       console.error(error);
@@ -310,10 +202,8 @@ export class ProfilePage implements OnInit {
     }
   }
 
-  //ฟังก์ชัน Logout
   logout() {
     this.lineService.logout();
-    
     this.lineProfile = null;
     this.isLoggedIn = false;
     this.currentRole = 'guest';
@@ -329,23 +219,16 @@ export class ProfilePage implements OnInit {
     }
   }
 
-  // ✅ Dev Tools: Force Switch Role
   async debugSwitchRole(role: string): Promise<void> {
     const loading = await this.loadingCtrl.create({ message: `Dev Force: ${role}...` });
     await loading.present();
-
     try {
-      // 1. เรียก Cloud Function เปลี่ยน Menu
       const success = await this.lineService.switchMenu(role);
-
       if (success) {
         this.currentRole = role;
-
-        // 2. อัปเดต DB 
         if (this.lineProfile?.userId) {
           await this.authService.updateProfile(this.lineProfile.userId, { role });
         }
-
         const alert = await this.alertCtrl.create({
           header: 'Success',
           message: `เปลี่ยนสถานะเป็น ${role.toUpperCase()} เรียบร้อย`,
@@ -363,10 +246,24 @@ export class ProfilePage implements OnInit {
     }
   }
 
-  // ฟังก์ชันเปิด LINE OA (ลิงก์ External)
-  openLineOA(): void {
-    const link = this.lineService.getLineOALink();
-    window.open(link, '_system');
+  private generateGuestId(): string {
+    if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+      return `guest-${crypto.randomUUID()}`;
+    }
+    return `guest-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+  }
+
+  private async ensureGuestProfileRecord(): Promise<void> {
+    if (!this.lineProfile?.userId) return;
+    try {
+      await this.authService.syncLineProfile({
+        userId: this.lineProfile.userId,
+        displayName: this.lineProfile.displayName,
+        pictureUrl: this.lineProfile.pictureUrl
+      });
+    } catch (error) {
+      console.warn('Guest profile sync failed', error);
+    }
   }
 
   segmentChanged(ev: any) {
