@@ -2,70 +2,91 @@
 
 <ion-content [fullscreen]="true" class="bg-main">
 
-  <div class="top-section ion-padding-horizontal ion-padding-top">
-    
-    <div class="sub-header-row">
-      <h1 class="page-title">โปรไฟล์</h1>
-      
-      <ion-button fill="clear" (click)="logout()" color="medium" class="logout-btn">
-        <ion-icon slot="icon-only" name="log-out-outline"></ion-icon>
-      </ion-button>
+  <div *ngIf="!isLoggedIn && !isLiffLoading" class="ion-padding ion-text-center landing-container">
+    <div class="landing-logo">
+      <img src="assets/FastPass_Icon_1.png" alt="Fastpass" class="landing-logo-img" />
+      <h1>ยินดีต้อนรับ</h1>
+      <p class="ion-text-muted">กรุณาเลือกวิธีการเข้าใช้งาน</p>
+    </div>
+    <ion-grid class="ion-margin-top">
+      <ion-row>
+        <ion-col size="12">
+          <ion-button expand="block" size="large" color="success" (click)="loginWithLine()">
+            <ion-icon slot="start" name="chatbubbles-outline"></ion-icon>
+            เข้าสู่ระบบด้วย LINE
+          </ion-button>
+          <p class="note-text">สำหรับผู้มาติดต่อทั่วไป</p>
+        </ion-col>
+        <ion-col size="12" class="ion-margin-top">
+          <ion-button expand="block" size="large" color="medium" fill="outline" (click)="continueAsGuest()">
+            <ion-icon slot="start" name="globe-outline"></ion-icon>
+            Guest / Non-LINE User
+          </ion-button>
+          <p class="note-text">สำหรับผู้มาติดต่อทั่วไป (ชาวต่างชาติ)</p>
+        </ion-col>
+      </ion-row>
+    </ion-grid>
+  </div>
+
+  <div *ngIf="isLiffLoading" class="ion-text-center ion-padding top-section">
+    <ion-spinner color="primary"></ion-spinner>
+    <p>กำลังโหลดข้อมูล...</p>
+  </div>
+
+  <div *ngIf="isLoggedIn && !isLiffLoading">
+    <div class="top-section ion-padding-horizontal ion-padding-top">
+      <div class="sub-header-row">
+        <h1 class="page-title">โปรไฟล์</h1>
+        <ion-button fill="clear" (click)="logout()" color="medium" class="logout-btn">
+          <ion-icon slot="icon-only" name="log-out-outline"></ion-icon>
+        </ion-button>
+      </div>
+
+      <ion-card class="figma-user-card">
+        <ion-item lines="none" class="ion-no-padding" detail="false">
+          <ion-avatar slot="start">
+            <img [src]="lineProfile?.pictureUrl || 'assets/shapes.svg'" />
+          </ion-avatar>
+          <ion-label>
+            <h2>{{ lineProfile?.displayName || 'Guest User' }}</h2>
+            <div class="role-container">
+              <ion-badge [color]="getRoleColor(currentRole)" mode="ios">
+                {{ currentRole | uppercase }}
+              </ion-badge>
+            </div>
+            <p class="debug-userid" *ngIf="lineProfile?.userId" (click)="copyUserId()">
+              ID: {{ lineProfile?.userId }}
+              <ion-icon name="copy-outline"></ion-icon>
+            </p>
+          </ion-label>
+          <ion-icon slot="end" name="chevron-forward-outline" color="medium"></ion-icon>
+        </ion-item>
+      </ion-card>
+
+      <ion-segment [(ngModel)]="selectedTab" (ionChange)="segmentChanged($event)" class="figma-tabs" mode="md">
+        <ion-segment-button value="dashboard">
+          <ion-label>แดชบอร์ด</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="list">
+          <ion-label>รายการ</ion-label>
+        </ion-segment-button>
+      </ion-segment>
     </div>
 
-    <!-- Warning Banner for iOS Chrome/Edge/LINE browser -->
-    <ion-card class="warning-banner" *ngIf="isChromeOnIOS">
-      <ion-item lines="none" class="ion-no-padding">
-        <ion-icon name="alert-circle-outline" slot="start" color="warning"></ion-icon>
-        <ion-label class="ion-text-wrap">
-          <h3 style="font-weight: bold; color: #b45309;">Opening Safari...</h3>
-          <p style="font-size: 0.8rem; color: #92400e;">
-            ระบบกำลังเปิด Safari... <br>
-            หากไม่เปลี่ยนหน้า กรุณากดปุ่ม <b>Copy Link</b> แล้วเปิดเอง
-          </p>
-        </ion-label>
-      </ion-item>
-      <ion-button fill="clear" expand="block" (click)="copyCurrentLink()" style="height: 30px; font-size: 0.8rem;">
-        <ion-icon name="copy-outline" slot="start"></ion-icon> Copy Link Manual
-      </ion-button>
-    </ion-card>
+    <div class="ion-padding">
+      <ion-card class="ion-margin-top action-card" *ngIf="currentRole === 'guest'">
+        <ion-card-header>
+          <ion-card-subtitle>สำหรับผู้มาติดต่อ</ion-card-subtitle>
+        </ion-card-header>
+        <ion-card-content>
+          <ion-button expand="block" (click)="openVisitorRegister()">
+            <ion-icon name="card-outline" slot="start"></ion-icon>
+            ลงทะเบียน (Visitor Registration)
+          </ion-button>
+        </ion-card-content>
+      </ion-card>
 
-    <div *ngIf="isLiffLoading" class="ion-text-center ion-padding">
-      <ion-spinner color="primary"></ion-spinner>
-    </div>
-
-    <ion-card class="figma-user-card" *ngIf="lineProfile && !isLiffLoading">
-      <ion-item lines="none" class="ion-no-padding" detail="false">
-        <ion-avatar slot="start">
-          <img [src]="lineProfile?.pictureUrl || 'assets/shapes.svg'" />
-        </ion-avatar>
-        <ion-label>
-          <h2>{{ lineProfile?.displayName }}</h2>
-          <div class="role-container">
-            <ion-badge [color]="getRoleColor(currentRole)" mode="ios">
-              {{ currentRole | uppercase }}
-            </ion-badge>
-          </div>
-          <!-- Debug User ID -->
-          <p class="debug-userid" (click)="copyUserId()">
-            ID: {{ lineProfile?.userId || '...' }}
-            <ion-icon name="copy-outline"></ion-icon>
-          </p>
-        </ion-label>
-        <ion-icon slot="end" name="chevron-forward-outline" color="medium"></ion-icon>
-      </ion-item>
-    </ion-card>
-
-    <ion-segment [(ngModel)]="selectedTab" (ionChange)="segmentChanged($event)" class="figma-tabs" mode="md">
-      <ion-segment-button value="dashboard">
-        <ion-label>แดชบอร์ด</ion-label>
-      </ion-segment-button>
-      <ion-segment-button value="list">
-        <ion-label>รายการ</ion-label>
-      </ion-segment-button>
-    </ion-segment>
-
-  </div> <div class="ion-padding">
-    <ion-card class="ion-margin-top action-card">
+      <ion-card class="ion-margin-top action-card">
         <ion-card-header>
           <ion-card-subtitle>เมนูหลัก</ion-card-subtitle>
         </ion-card-header>
@@ -76,31 +97,20 @@
           </ion-button>
         </ion-card-content>
       </ion-card>
-  
+
       <ion-card class="ion-margin-top dev-card">
         <ion-card-header>
-          <ion-card-subtitle class="dev-header">
-            DEV TOOLS
-          </ion-card-subtitle>
+          <ion-card-subtitle class="dev-header">DEV TOOLS</ion-card-subtitle>
         </ion-card-header>
         <ion-card-content>
           <div class="dev-grid">
-            <ion-button color="medium" expand="block" (click)="debugSwitchRole('guest')">
-              <ion-icon name="refresh-outline" slot="start"></ion-icon> Guest
-            </ion-button>
+            <ion-button color="medium" expand="block" (click)="debugSwitchRole('guest')">Guest</ion-button>
             <ion-button color="success" expand="block" (click)="debugSwitchRole('visitor')">Visitor</ion-button>
             <ion-button color="tertiary" expand="block" (click)="debugSwitchRole('user')">User</ion-button>
             <ion-button color="primary" expand="block" (click)="debugSwitchRole('host')">Host</ion-button>
           </div>
         </ion-card-content>
       </ion-card>
+    </div>
   </div>
-
-  <!-- Browser Debug Box -->
-  <div class="browser-debug-box ion-margin-top" *ngIf="browserInfo">
-    <p><strong>🐞 Debug Info:</strong></p>
-    <p>Browser: {{ browserInfo?.browser?.name }} {{ browserInfo?.browser?.version }}</p>
-    <p>OS: {{ browserInfo?.os?.name }} {{ browserInfo?.os?.version }}</p>
-  </div>
-
 </ion-content>

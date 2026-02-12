@@ -212,3 +212,30 @@ ion-header {
   
   p { margin: 2px 0; }
 }
+
+.landing-container {
+  min-height: calc(100vh - 200px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.landing-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  h1 { font-weight: 700; margin-bottom: 4px; }
+  p { margin: 0; }
+}
+
+.landing-logo-img {
+  width: 120px;
+  border-radius: 20px;
+  margin-bottom: 20px;
+}
+
+.note-text {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-top: 8px;
+}
