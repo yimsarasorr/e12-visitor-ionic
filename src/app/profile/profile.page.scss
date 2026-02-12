@@ -181,7 +181,29 @@ ion-header {
   border: 1px solid #fcd34d; 
   margin-bottom: 16px; 
   box-shadow: none !important;
-  ion-icon { margin-right: 10px; margin-left: 10px; }
+
+  .warning-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .warning-icon {
+    font-size: 24px;
+    color: #f59e0b;
+  }
+
+  .warning-title {
+    margin: 0;
+    font-weight: bold;
+    font-size: 1rem;
+  }
+
+  .warning-description {
+    margin: 4px 0 8px;
+    font-size: 0.8rem;
+    color: #666;
+  }
 }
 
 /* Debug User ID */

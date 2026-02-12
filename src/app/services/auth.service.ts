@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
 import { environment } from '../../environments/environment';
 import { Observable, from, map } from 'rxjs';
 
@@ -25,54 +25,70 @@ export interface UserProfile {
   providedIn: 'root'
 })
 export class AuthService {
-  private supabase: SupabaseClient;
+  // ✅ แก้ไข 1: สร้าง Client ตรงนี้เลย เพื่อลดโอกาสเกิด Multiple Instance
+  private supabase: SupabaseClient = createClient(environment.supabaseUrl, environment.supabaseKey);
 
-  constructor() {
-    this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
+  constructor() {}
+
+  // --- 1. Login ผ่าน LINE (เอา Token มาแลก Session) ---
+  async signInWithLineToken(idToken: string) {
+    const { data, error } = await this.supabase.auth.signInWithIdToken({
+      provider: 'line',
+      token: idToken,
+    });
+    if (error) throw error;
+    return data.user;
+  }
+
+  // --- 2. Login แบบ Guest (Anonymous) ---
+  async signInAnonymously() {
+    const { data, error } = await this.supabase.auth.signInAnonymously();
+    if (error) throw error;
+    return data.user;
+  }
+
+  // --- 3. อัปเกรด Guest เป็น User ถาวร (Email/Password) ---
+  async upgradeGuestToEmail(email: string, password: string) {
+    const { data, error } = await this.supabase.auth.updateUser({
+      email: email,
+      password: password
+    });
+    if (error) throw error;
+    return data.user;
+  }
+
+  // --- Utility: ดึง User ปัจจุบัน ---
+  async getCurrentUser() {
+    const { data } = await this.supabase.auth.getUser();
+    return data.user;
   }
 
   // ==========================================
   // ส่วนใหม่: สำหรับ Register & Rich Menu Flow
   // ==========================================
 
-  // 1. Sync User จาก LINE ลง DB (ใช้ตอนเปิดแอป)
+  // ✅ แก้ไข 2: ใช้ Upsert แทน Select+Insert เพื่อแก้ Error 406
   async syncLineProfile(lineProfile: any): Promise<any> {
     try {
-      // 1.1 เช็คใน DB ว่ามี user นี้ไหม
-      const { data: existingUser } = await this.supabase
+      // Upsert: ถ้ามี ID นี้แล้วให้อัปเดต ถ้ายังไม่มีให้สร้างใหม่ (Atomic Operation)
+      const { data, error } = await this.supabase
         .from('profiles')
-        .select('*')
-        .eq('line_user_id', lineProfile.userId)
-        .single();
-
-      if (existingUser) {
-        // 1.2 ถ้ามี: อัปเดตข้อมูลล่าสุด (ชื่อ/รูป)
-        await this.supabase.from('profiles').update({
-          full_name: lineProfile.displayName,
-          picture_url: lineProfile.pictureUrl
-        }).eq('id', existingUser.id);
-        
-        return existingUser;
-      }
-
-      // 1.3 ถ้าไม่มี: สร้างใหม่ (Default Role = 'guest')
-      const { data: newUser, error } = await this.supabase
-        .from('profiles')
-        .insert({
-          line_user_id: lineProfile.userId,
-          full_name: lineProfile.displayName,
+        .upsert({
+          id: lineProfile.userId,            // ต้องตรงกับ Auth UID
+          full_name: lineProfile.displayName || 'Guest User',
           picture_url: lineProfile.pictureUrl,
-          role: 'guest'
-        })
+          role: lineProfile.role || 'guest'  // Default role ถ้าไม่ส่งมา
+        }, { onConflict: 'id' })             // ยึด id เป็นหลัก
         .select()
-        .single();
+        .single(); // Upsert เสร็จแล้วค่อยดึงค่ากลับมา จะไม่มีทาง Error 406
 
       if (error) throw error;
-      return newUser;
+      return data;
 
     } catch (err) {
       console.error('Auth Sync Error:', err);
-      return null;
+      // ในกรณีนี้อาจจะ throw error ต่อไปเพื่อให้หน้าบ้านรู้ว่า save ไม่สำเร็จ
+      throw err;
     }
   }
 
@@ -82,7 +98,7 @@ export class AuthService {
       const { data, error } = await this.supabase
         .from('profiles')
         .update(updateData)
-        .eq('line_user_id', userId)
+        .eq('id', userId)
         .select()
         .single();
       

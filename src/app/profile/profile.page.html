@@ -74,6 +74,25 @@
     </div>
 
     <div class="ion-padding">
+      <ion-card class="ion-margin-top action-card warning-banner" *ngIf="currentRole === 'guest'">
+        <ion-card-content>
+          <div class="warning-content">
+            <ion-icon name="alert-circle-outline" class="warning-icon"></ion-icon>
+            <div class="warning-text">
+              <h3 class="warning-title">บัญชีชั่วคราว</h3>
+              <p class="warning-description">
+                ข้อมูลของคุณอาจสูญหาย
+              </p>
+            </div>
+          </div>
+          
+          <ion-button expand="block" color="warning" (click)="upgradeGuestAccount()">
+            <ion-icon name="person-add-outline" slot="start"></ion-icon>
+            ลงทะเบียนบัญชี
+          </ion-button>
+        </ion-card-content>
+      </ion-card>
+
       <ion-card class="ion-margin-top action-card" *ngIf="currentRole === 'guest'">
         <ion-card-header>
           <ion-card-subtitle>สำหรับผู้มาติดต่อ</ion-card-subtitle>

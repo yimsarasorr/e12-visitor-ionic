@@ -13,16 +13,16 @@ import {
   peopleOutline, schoolOutline, logOutOutline, cardOutline, 
   chatbubblesOutline, logInOutline, qrCodeOutline, refreshOutline, 
   chevronForwardOutline, alertCircleOutline, bugOutline, copyOutline,
-  personOutline, globeOutline
+  personOutline, globeOutline, personAddOutline
 } from 'ionicons/icons';
 
 // Import Services
 import { LineService } from '../services/line.service';
 import { AuthService } from '../services/auth.service';
-
-// Import Components
 import { VisitorRegistrationModalComponent } from '../components/ui/visitor-registration-modal/visitor-registration-modal.component';
 import { FastpassHeaderComponent } from '../components/ui/fastpass-header/fastpass-header.component';
+
+declare const liff: any;
 
 @Component({
   selector: 'app-profile',
@@ -41,7 +41,7 @@ export class ProfilePage implements OnInit {
 
   currentRole: string = 'guest';
   lineProfile: any = null;
-  isLiffLoading = false;
+  isLiffLoading = true;
   isLoggedIn = false; // ใช้คุม State หน้า Landing vs Dashboard
   selectedTab = 'dashboard';
 
@@ -57,7 +57,7 @@ export class ProfilePage implements OnInit {
       chatbubblesOutline, refreshOutline, logInOutline, 
       peopleOutline, schoolOutline, chevronForwardOutline,
       alertCircleOutline, bugOutline, copyOutline,
-      personOutline, globeOutline
+      personOutline, globeOutline, personAddOutline
     });
   }
 
@@ -68,42 +68,137 @@ export class ProfilePage implements OnInit {
   private async initData() {
     this.isLiffLoading = true;
     try {
+      // 1. เริ่มต้น LIFF
       await this.lineService.initLiff();
-      if (this.lineService.isLoggedIn()) {
-        console.log('User is already logged in LINE.');
-        await this.fetchUserProfile();
+
+      // 2. เช็คว่าเป็น LINE In-App Browser หรือไม่?
+      if (this.lineService.isInClient()) {
+        await this.handleLineInAppFlow();
       } else {
-        console.log('User is NOT logged in. Show Landing Page.');
+        await this.handleExternalBrowserFlow();
       }
     } catch (error) {
-      console.error('LIFF Init Error:', error);
+      console.error('Init Error:', error);
     } finally {
       this.isLiffLoading = false;
     }
   }
 
+  // ➤ Flow A: ทำงานใน LINE (Auto Login)
+  private async handleLineInAppFlow() {
+    // 1. ถ้ายังไม่ Login LINE -> สั่ง Login
+    if (!this.lineService.isLoggedIn()) {
+      this.lineService.login();
+      return;
+    }
+
+    // 2. ถ้า Login แล้ว -> เอา ID Token ไปแลก Supabase Session
+    const idToken = liff.getIDToken();
+    if (idToken) {
+      const user = await this.authService.signInWithLineToken(idToken);
+
+      // 3. Sync Profile ลง DB
+      const lineProfile = await this.lineService.getProfile();
+      await this.finalizeLogin(user, lineProfile);
+    }
+  }
+
+  // ➤ Flow B: ทำงานนอก LINE (เช็ค Session ค้าง)
+  private async handleExternalBrowserFlow() {
+    const user = await this.authService.getCurrentUser();
+    
+    if (user) {
+      // ถ้ามี -> ดึงข้อมูลมาโชว์เลย (เบื้องต้น)
+      this.lineProfile = { userId: user.id };
+      this.isLoggedIn = true;
+      // TODO: Fetch full profile from DB based on user.id
+    } else {
+      // ถ้าไม่มี -> แสดง Landing Page (รอ user กดปุ่ม)
+      this.isLoggedIn = false;
+    }
+  }
+
+  // ปุ่ม Login ด้วย LINE (ใช้ในกรณีผู้ใช้กดเองจาก Landing)
   async loginWithLine() {
     this.lineService.login();
   }
 
+  // ➤ Action: ปุ่ม Guest / Non-LINE User (บน Landing Page)
   async continueAsGuest() {
-    this.lineProfile = {
-      userId: this.generateGuestId(),
-      displayName: 'Guest User',
-      pictureUrl: 'assets/shapes.svg'
-    };
-    this.isLoggedIn = true;
-    this.currentRole = 'guest';
-    await this.ensureGuestProfileRecord();
+    this.isLiffLoading = true;
+    try {
+      // 1. สร้าง Anonymous User
+      const user = await this.authService.signInAnonymously();
+
+      // 2. สร้าง Profile หลอกๆ เพื่อ Sync ลง DB
+      const guestProfile = {
+        userId: user?.id, // ใช้ UUID จริงจาก Supabase
+        displayName: 'Guest User',
+        pictureUrl: 'assets/shapes.svg'
+      };
+
+      // 3. จบงาน
+      await this.finalizeLogin(user, guestProfile);
+
+    } catch (error) {
+      console.error('Guest Login Failed', error);
+      alert('เข้าใช้งานไม่ได้ กรุณาลองใหม่');
+    } finally {
+      this.isLiffLoading = false;
+    }
   }
 
-  async fetchUserProfile() {
-    this.lineProfile = await this.lineService.getProfile();
-    if (this.lineProfile) {
-      this.isLoggedIn = true;
-      const dbUser = await this.authService.syncLineProfile(this.lineProfile);
-      if (dbUser?.role) this.currentRole = dbUser.role;
-    }
+  // ➤ Action: ปุ่มยืนยันตัวตน (Upgrade Guest -> Email User)
+  async upgradeGuestAccount() {
+    const alert = await this.alertCtrl.create({
+      header: 'ลงทะเบียนผู้ใช้งาน',
+      message: 'กรุณากรอกอีเมลและรหัสผ่านเพื่อบันทึกบัญชีนี้ถาวร',
+      inputs: [
+        { name: 'email', type: 'email', placeholder: 'อีเมล' },
+        { name: 'password', type: 'password', placeholder: 'รหัสผ่าน' }
+      ],
+      buttons: [
+        { text: 'ยกเลิก', role: 'cancel' },
+        {
+          text: 'ยืนยัน',
+          handler: async (data) => {
+            try {
+              await this.authService.upgradeGuestToEmail(data.email, data.password);
+              const success = await this.alertCtrl.create({ 
+                header: 'สำเร็จ', 
+                message: 'บัญชีของคุณถูกผูกกับอีเมลเรียบร้อยแล้ว',
+                buttons: ['OK']
+              });
+              await success.present();
+            } catch (err: any) {
+              const errorAlert = await this.alertCtrl.create({ 
+                header: 'ผิดพลาด', 
+                message: err.message,
+                buttons: ['OK']
+              });
+              await errorAlert.present();
+            }
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
+
+  // Helper: จบกระบวนการ Login
+  private async finalizeLogin(user: any, profileData: any) {
+    // Sync ข้อมูลลง Table Profiles (โดยใช้ user.id เป็น Key หลัก)
+    const dbUser = await this.authService.syncLineProfile({
+      ...profileData,
+      userId: user.id // สำคัญ! ใช้ UID จาก Auth
+    });
+
+    this.lineProfile = {
+      ...profileData,
+      userId: user.id
+    };
+    this.currentRole = dbUser?.role || 'guest';
+    this.isLoggedIn = true;
   }
 
   copyCurrentLink() {
@@ -116,7 +211,6 @@ export class ProfilePage implements OnInit {
     });
   }
 
-  // ฟังก์ชัน Copy User ID
   copyUserId() {
     if (this.lineProfile?.userId) {
       navigator.clipboard.writeText(this.lineProfile.userId).then(() => {
@@ -125,7 +219,6 @@ export class ProfilePage implements OnInit {
     }
   }
 
-  // ฟังก์ชันเปิด LINE OA (ลิงก์ External)
   openLineOA(): void {
     const link = this.lineService.getLineOALink();
     window.open(link, '_system');
@@ -243,26 +336,6 @@ export class ProfilePage implements OnInit {
       alert('เปลี่ยนเมนูไม่สำเร็จ: ดู Log ใน Supabase');
     } finally {
       await loading.dismiss();
-    }
-  }
-
-  private generateGuestId(): string {
-    if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-      return `guest-${crypto.randomUUID()}`;
-    }
-    return `guest-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-  }
-
-  private async ensureGuestProfileRecord(): Promise<void> {
-    if (!this.lineProfile?.userId) return;
-    try {
-      await this.authService.syncLineProfile({
-        userId: this.lineProfile.userId,
-        displayName: this.lineProfile.displayName,
-        pictureUrl: this.lineProfile.pictureUrl
-      });
-    } catch (error) {
-      console.warn('Guest profile sync failed', error);
     }
   }
 
