@@ -71,7 +71,7 @@ export class ProfilePage implements OnInit {
       // 1. เริ่มต้น LIFF
       await this.lineService.initLiff();
 
-      // 2. เช็คว่าเป็น LINE In-App Browser หรือไม่?
+      // 2. เช็คว่าเป็น LINE In-App Browser หรือไม่
       if (this.lineService.isInClient()) {
         await this.handleLineInAppFlow();
       } else {
@@ -103,17 +103,49 @@ export class ProfilePage implements OnInit {
     }
   }
 
-  // ➤ Flow B: ทำงานนอก LINE (เช็ค Session ค้าง)
+  // ➤ Flow B: ทำงานนอก LINE (External Browser / Desktop)
   private async handleExternalBrowserFlow() {
+    // 1. เช็คว่ากลับมาจาก LINE Login หรือไม่?
+    if (this.lineService.isLoggedIn()) { 
+      try {
+        console.log('🔄 Returning from LINE Login...');
+        const idToken = liff.getIDToken();
+        
+        if (idToken) {
+          const user = await this.authService.signInWithLineToken(idToken);
+          console.log('Supabase Exchange Success:', user.id);
+
+          const lineProfile = await this.lineService.getProfile();
+          await this.finalizeLogin(user, lineProfile);
+          return;
+        }
+      } catch (error) {
+        console.error('Line Redirect Error:', error);
+        alert('เซสชั่นหมดอายุ กรุณากด Login ใหม่อีกครั้ง');
+        this.lineService.logout();
+      }
+    }
+
+    // 2. เช็ค Session ค้าง + ดึง Role จาก DB
     const user = await this.authService.getCurrentUser();
     
     if (user) {
-      // ถ้ามี -> ดึงข้อมูลมาโชว์เลย (เบื้องต้น)
-      this.lineProfile = { userId: user.id };
+      this.lineProfile = { 
+        userId: user.id,
+        displayName: user.user_metadata['full_name'] || 'Guest User',
+        pictureUrl: user.user_metadata['picture_url']
+      };
+      
+      // แก้ไข: ดึงข้อมูลจริงจาก DB มาดู Role
+      const dbProfile = await this.authService.getProfile(user.id);
+      if (dbProfile) {
+        this.currentRole = dbProfile.role; // ใช้ role จาก DB เช่น 'host'
+      } else {
+        this.currentRole = (user as any).is_anonymous ? 'guest' : 'user'; 
+      }
+      
       this.isLoggedIn = true;
-      // TODO: Fetch full profile from DB based on user.id
     } else {
-      // ถ้าไม่มี -> แสดง Landing Page (รอ user กดปุ่ม)
       this.isLoggedIn = false;
     }
   }
@@ -295,11 +327,18 @@ export class ProfilePage implements OnInit {
     }
   }
 
-  logout() {
+  async logout() {
+    // 1. Logout จาก Supabase
+    await this.authService.signOut(); 
+    
+    // 2. Logout จาก LINE
     this.lineService.logout();
+
+    // 3. Reset State
     this.lineProfile = null;
     this.isLoggedIn = false;
     this.currentRole = 'guest';
+
     window.location.reload();
   }
 

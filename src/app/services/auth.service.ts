@@ -32,12 +32,20 @@ export class AuthService {
 
   // --- 1. Login ผ่าน LINE (เอา Token มาแลก Session) ---
   async signInWithLineToken(idToken: string) {
-    const { data, error } = await this.supabase.auth.signInWithIdToken({
-      provider: 'line',
-      token: idToken,
+    const { data, error } = await this.supabase.functions.invoke('line-login', {
+      body: { idToken }
     });
+
     if (error) throw error;
-    return data.user;
+
+    if (data?.session) {
+      await this.supabase.auth.setSession({
+        access_token: data.session.access_token,
+        refresh_token: ''
+      });
+      return data.session.user; 
+    }
+    return null;
   }
 
   // --- 2. Login แบบ Guest (Anonymous) ---
@@ -45,6 +53,11 @@ export class AuthService {
     const { data, error } = await this.supabase.auth.signInAnonymously();
     if (error) throw error;
     return data.user;
+  }
+
+  async signOut() {
+    const { error } = await this.supabase.auth.signOut();
+    if (error) console.error('SignOut Error:', error);
   }
 
   // --- 3. อัปเกรด Guest เป็น User ถาวร (Email/Password) ---
@@ -63,6 +76,16 @@ export class AuthService {
     return data.user;
   }
 
+  // 1. เพิ่มฟังก์ชันดึง Profile ตาม userId
+  async getProfile(userId: string) {
+    const { data, error } = await this.supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    return data;
+  }
+
   // ==========================================
   // ส่วนใหม่: สำหรับ Register & Rich Menu Flow
   // ==========================================
@@ -70,24 +93,29 @@ export class AuthService {
   // ✅ แก้ไข 2: ใช้ Upsert แทน Select+Insert เพื่อแก้ Error 406
   async syncLineProfile(lineProfile: any): Promise<any> {
     try {
-      // Upsert: ถ้ามี ID นี้แล้วให้อัปเดต ถ้ายังไม่มีให้สร้างใหม่ (Atomic Operation)
+      const upsertData: any = {
+        id: lineProfile.userId,
+        full_name: lineProfile.displayName || 'Guest User',
+        picture_url: lineProfile.pictureUrl,
+        updated_at: new Date()
+      };
+
+      // ส่ง role เฉพาะกรณีที่ถูกระบุมาเท่านั้น
+      if (lineProfile.role) {
+        upsertData.role = lineProfile.role;
+      }
+
       const { data, error } = await this.supabase
         .from('profiles')
-        .upsert({
-          id: lineProfile.userId,            // ต้องตรงกับ Auth UID
-          full_name: lineProfile.displayName || 'Guest User',
-          picture_url: lineProfile.pictureUrl,
-          role: lineProfile.role || 'guest'  // Default role ถ้าไม่ส่งมา
-        }, { onConflict: 'id' })             // ยึด id เป็นหลัก
+        .upsert(upsertData, { onConflict: 'id' })
         .select()
-        .single(); // Upsert เสร็จแล้วค่อยดึงค่ากลับมา จะไม่มีทาง Error 406
+        .single();
 
       if (error) throw error;
       return data;
 
     } catch (err) {
       console.error('Auth Sync Error:', err);
-      // ในกรณีนี้อาจจะ throw error ต่อไปเพื่อให้หน้าบ้านรู้ว่า save ไม่สำเร็จ
       throw err;
     }
   }
