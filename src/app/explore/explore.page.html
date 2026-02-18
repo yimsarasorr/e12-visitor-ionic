@@ -1,9 +1,5 @@
 <ion-header class="ion-no-border" *ngIf="!isFloorFullscreen">
-  <app-fastpass-header
-    class="screen-header"
-    [selectedUserId]="selectedUserId"
-    (userSelected)="onUserSelected($event)">
-  </app-fastpass-header>
+  <app-fastpass-header></app-fastpass-header>
 </ion-header>
 
 <ion-content [fullscreen]="isFloorFullscreen" [scrollY]="false">

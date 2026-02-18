@@ -9,36 +9,13 @@
     </div>
   </ion-title>
 
-  <ion-buttons slot="end">
-    <ng-container *ngIf="!isLoading && !loadError; else headerFallback">
-      <ion-item lines="none" class="user-select-item" button="true" detail="false">
-        <ion-icon name="person-circle-outline" slot="start"></ion-icon>
-        
-        <ion-select
-          interface="popover"
-          mode="md"
-          [value]="selectedUserId"
-          (ionChange)="onUserChange($event)"
-          placeholder="เลือกผู้ใช้"
-        >
-          <ion-select-option *ngFor="let user of users" [value]="user.id">
-            {{ user.role_label || user.full_name }}
-          </ion-select-option>
-        </ion-select>
-        
-        <ion-icon name="chevron-down-outline" slot="end" class="dropdown-arrow"></ion-icon>
-      </ion-item>
-    </ng-container>
-  </ion-buttons>
+  <!-- <ion-buttons slot="end">
+    <ion-item lines="none" class="user-display" *ngIf="currentUser">
+      <ion-label class="ion-text-right">
+        <h3>{{ currentUser.full_name }}</h3>
+        <p class="role-badge">{{ currentUser.role_label }}</p>
+      </ion-label>
+      <ion-icon name="person-circle-outline" slot="end" size="large"></ion-icon>
+    </ion-item>
+  </ion-buttons> -->
 </ion-toolbar>
-
-<ng-template #headerFallback>
-  <ion-buttons slot="end">
-    <div class="fallback-wrapper">
-      <ion-skeleton-text *ngIf="isLoading" animated class="user-skeleton"></ion-skeleton-text>
-      <div *ngIf="loadError" class="load-error">
-        <ion-icon name="alert-circle" color="danger"></ion-icon>
-      </div>
-    </div>
-  </ion-buttons>
-</ng-template>

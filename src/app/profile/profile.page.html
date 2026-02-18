@@ -37,7 +37,7 @@
     <div class="top-section ion-padding-horizontal ion-padding-top">
       <div class="sub-header-row">
         <h1 class="page-title">โปรไฟล์</h1>
-        <ion-button fill="clear" (click)="logout()" color="medium" class="logout-btn">
+        <ion-button fill="clear" (click)="onLogout()" color="medium" class="logout-btn">
           <ion-icon slot="icon-only" name="log-out-outline"></ion-icon>
         </ion-button>
       </div>
@@ -79,16 +79,30 @@
           <div class="warning-content">
             <ion-icon name="alert-circle-outline" class="warning-icon"></ion-icon>
             <div class="warning-text">
-              <h3 class="warning-title">บัญชีชั่วคราว</h3>
+              <h3 class="warning-title">บัญชีชั่วคราว (Guest Mode)</h3>
               <p class="warning-description">
-                ข้อมูลของคุณอาจสูญหาย
+                อุปกรณ์นี้ยังไม่ได้ยืนยันตัวตนผ่าน LINE
               </p>
             </div>
           </div>
-          
-          <ion-button expand="block" color="warning" (click)="upgradeGuestAccount()">
+
+          <ion-button
+            expand="block"
+            color="success"
+            class="ion-margin-top"
+            (click)="loginWithLine()">
+            <ion-icon name="chatbubbles-outline" slot="start"></ion-icon>
+            ยืนยันตัวตนผ่าน LINE
+          </ion-button>
+
+          <ion-button
+            expand="block"
+            color="warning"
+            fill="outline"
+            class="ion-margin-top"
+            (click)="upgradeGuestAccount()">
             <ion-icon name="person-add-outline" slot="start"></ion-icon>
-            ลงทะเบียนบัญชี
+            ลงทะเบียนด้วย Email
           </ion-button>
         </ion-card-content>
       </ion-card>

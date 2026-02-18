@@ -62,6 +62,27 @@ export class ProfilePage implements OnInit {
   }
 
   async ngOnInit() {
+    this.isLiffLoading = true;
+    
+    // ให้เวลา Browser หายใจนิดนึง (แก้ Race Condition เบื้องต้น)
+    await new Promise(r => setTimeout(r, 200));
+
+    // 1. เรียก getCurrentUser ตัวเทพที่เราเพิ่งแก้
+    try {
+      const user = await this.authService.getCurrentUser();
+      
+      if (user) {
+        console.log('⚓ Anchor Secured:', user.id);
+        // ถ้ามี User แล้ว ไม่ต้องทำอะไร ปล่อยให้ initData จัดการต่อ
+      } else {
+        console.log('⚠️ No Session Found -> Creating Anchor...');
+        await this.authService.signInAnonymously();
+      }
+    } catch (e) {
+      console.error('Critical Auth Error:', e);
+    }
+
+    // 2. เริ่มโหลดข้อมูลตามปกติ
     await this.initData();
   }
 
@@ -119,11 +140,13 @@ export class ProfilePage implements OnInit {
           await this.finalizeLogin(user, lineProfile);
           return;
         }
-      } catch (error) {
-        console.error('Line Redirect Error:', error);
-        alert('เซสชั่นหมดอายุ กรุณากด Login ใหม่อีกครั้ง');
-        this.lineService.logout();
-      }
+      } catch (error: any) {
+  console.error('Line Redirect Error:', error);
+  // ถ้าเป็น 403 Device Mismatch จะได้รู้ครับ
+  const errorMsg = error.message || JSON.stringify(error);
+  alert('เข้าสู่ระบบไม่สำเร็จ: ' + errorMsg); 
+  this.lineService.logout();
+}
     }
 
     // 2. เช็ค Session ค้าง + ดึง Role จาก DB
@@ -159,22 +182,18 @@ export class ProfilePage implements OnInit {
   async continueAsGuest() {
     this.isLiffLoading = true;
     try {
-      // 1. สร้าง Anonymous User
-      const user = await this.authService.signInAnonymously();
-
-      // 2. สร้าง Profile หลอกๆ เพื่อ Sync ลง DB
+      // ใช้ฟังก์ชันที่เราแก้ใหม่ ซึ่งจะคืนค่า User เดิมถ้ามีอยู่แล้ว
+      const user = await this.authService.signInAnonymously(); 
+      
       const guestProfile = {
-        userId: user?.id, // ใช้ UUID จริงจาก Supabase
+        userId: user?.id,
         displayName: 'Guest User',
         pictureUrl: 'assets/shapes.svg'
       };
 
-      // 3. จบงาน
       await this.finalizeLogin(user, guestProfile);
-
     } catch (error) {
       console.error('Guest Login Failed', error);
-      alert('เข้าใช้งานไม่ได้ กรุณาลองใหม่');
     } finally {
       this.isLiffLoading = false;
     }
@@ -219,17 +238,19 @@ export class ProfilePage implements OnInit {
 
   // Helper: จบกระบวนการ Login
   private async finalizeLogin(user: any, profileData: any) {
-    // Sync ข้อมูลลง Table Profiles (โดยใช้ user.id เป็น Key หลัก)
     const dbUser = await this.authService.syncLineProfile({
       ...profileData,
-      userId: user.id // สำคัญ! ใช้ UID จาก Auth
+      userId: user.id,
+      lineUserId: profileData.userId,
+      role: 'visitor'
     });
 
     this.lineProfile = {
       ...profileData,
       userId: user.id
     };
-    this.currentRole = dbUser?.role || 'guest';
+    
+    this.currentRole = dbUser?.role || 'visitor';
     this.isLoggedIn = true;
   }
 
@@ -327,19 +348,28 @@ export class ProfilePage implements OnInit {
     }
   }
 
-  async logout() {
-    // 1. Logout จาก Supabase
-    await this.authService.signOut(); 
-    
-    // 2. Logout จาก LINE
-    this.lineService.logout();
+  // แทนที่ logout เดิมด้วย onLogout แบบไม่ทำลาย Anonymous UID และไม่ reload หน้า
+  async onLogout() {
+    const alert = await this.alertCtrl.create({
+      header: 'ออกจากระบบ',
+      message: 'ต้องการกลับไปหน้าเลือกสิทธิ์เข้าใช้งานหรือไม่? (ตัวตนเครื่องจะยังคงเดิม)',
+      buttons: [
+        { text: 'ยกเลิก', role: 'cancel' },
+        {
+          text: 'ตกลง',
+          handler: async () => {
+            // 1. ล้างข้อมูลโปรไฟล์ชั่วคราว แต่ไม่ทำลาย Anonymous Session
+            await this.authService.logicalLogout();
 
-    // 3. Reset State
-    this.lineProfile = null;
-    this.isLoggedIn = false;
-    this.currentRole = 'guest';
-
-    window.location.reload();
+            // 2. กลับไปหน้า Landing โดยไม่ต้อง Reload หน้า
+            this.lineProfile = null;
+            this.currentRole = 'guest';
+            this.isLoggedIn = false;
+          }
+        }
+      ]
+    });
+    await alert.present();
   }
 
   getRoleColor(role: string): string {

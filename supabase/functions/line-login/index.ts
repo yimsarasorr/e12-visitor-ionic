@@ -11,12 +11,21 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const { idToken } = await req.json()
+    // รับ anonymousUid เพิ่มเข้ามา
+    const { idToken, anonymousUid } = await req.json()
+    if (!anonymousUid) {
+      return new Response(
+        JSON.stringify({ error: 'anonymousUid is required' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      )
+    }
+
     const SERVICE_ROLE_KEY = Deno.env.get('SERVICE_ROLE_KEY')!
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
     const LINE_CHANNEL_ID = Deno.env.get('LINE_CHANNEL_ID')!
     const JWT_SECRET = Deno.env.get('CUSTOM_JWT_SECRET')!
 
+    // 1. Verify LINE Token
     const params = new URLSearchParams({ id_token: idToken, client_id: LINE_CHANNEL_ID })
     const verifyRes = await fetch('https://api.line.me/oauth2/v2.1/verify', {
       method: 'POST',
@@ -24,76 +33,84 @@ serve(async (req) => {
       body: params
     })
     if (!verifyRes.ok) throw new Error('Invalid LINE Token')
-    const lineUser = await verifyRes.json()
+    const verifiedData = await verifyRes.json()
+    const lineUserId = verifiedData.sub // LINE User ID
 
-    const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
-    const lineId = lineUser.sub
-    const email = (lineUser.email || `${lineId}@line.placeholder.com`).toLowerCase()
+    // 2. Supabase Client (Service Role)
+    const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
 
-    // 🔍 1. ค้นหาในตาราง profiles ก่อนว่ามี line_user_id นี้ไหม
-    const { data: existingProfile } = await supabaseAdmin
+    // ตรวจสอบในตาราง profiles (จุดตัดสินใจ 2FA)
+    const { data: profile } = await supabase
       .from('profiles')
-      .select('id, role')
-      .eq('line_user_id', lineId)
-      .single()
+      .select('id, line_user_id')
+      .eq('line_user_id', lineUserId)
+      .maybeSingle()
 
-    let targetUserId: string;
-
-    if (existingProfile) {
-      // ✅ พบ Profile เดิม: พยายามใช้ ID เดิม (b117...)
-      targetUserId = existingProfile.id
-      console.log('🔗 Linking to existing profile ID:', targetUserId)
-
-      // เช็คว่าใน Auth มี ID นี้หรือยัง? ถ้าไม่มีให้สร้าง
-      const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(targetUserId)
-      
-      if (!authUser.user) {
-        await supabaseAdmin.auth.admin.createUser({
-          id: targetUserId, // บังคับใช้ ID ให้ตรงกับ Profiles
-          email: email,
-          email_confirm: true,
-          user_metadata: { full_name: lineUser.name, picture_url: lineUser.picture, provider: 'line' }
-        })
+    if (profile) {
+      // 🛡️ LINE นี้เคยผูกกับ UID อื่นแล้ว -> Reject
+      if (profile.id !== anonymousUid) {
+        return new Response(
+          JSON.stringify({ error: "Device Mismatch: This LINE account is bound to another device." }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
+        )
       }
+      // ✅ เคยผูกกับเครื่องนี้แล้ว -> อัปเดต role ให้เป็น visitor เสมอ
+      await supabase
+        .from('profiles')
+        .update({ role: 'visitor' })
+        .eq('id', anonymousUid)
     } else {
-      // ✨ ไม่พบ Profile: สร้างใหม่ตามปกติ
-      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email: email,
-        email_confirm: true,
-        user_metadata: { full_name: lineUser.name, picture_url: lineUser.picture, provider: 'line' }
-      })
-      
-      if (createError) {
-        const { data: list } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 })
-        const found = list.users.find(u => u.email?.toLowerCase() === email)
-        targetUserId = found?.id || ''
-      } else {
-        targetUserId = newUser.user!.id
-      }
+      // 🔗 ยังไม่เคยผูก -> Bind LINE เข้ากับ Anonymous UID ปัจจุบัน และตั้ง role = visitor
+      await supabase
+        .from('profiles')
+        .update({
+          line_user_id: lineUserId,
+          role: 'visitor'
+        })
+        .eq('id', anonymousUid)
     }
 
-    // 2. สร้าง Token (ใช้ targetUserId ที่เชื่อมโยงแล้ว)
-    const payload = {
+    // 🛡️ อัปเดต Auth ให้เลิกเป็น Anonymous และกลายเป็น Permanent User
+    await supabase.auth.admin.updateUserById(anonymousUid, {
+      email: `${lineUserId}@line.placeholder.com`,
+      password: crypto.randomUUID(), // ✅ รหัสผ่านสุ่มให้เป็น Email User เต็มตัว
+      email_confirm: true,
+      user_metadata: { 
+        full_name: verifiedData.name, 
+        picture_url: verifiedData.picture,
+        is_line_linked: true 
+      }
+    })
+
+    // 3. สร้าง Custom JWT โดยใช้ anonymousUid เดิม (UID เครื่อง)
+    const payload: djwt.Payload = {
       aud: "authenticated",
-      exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24 * 7),
-      sub: targetUserId,
-      email: email,
       role: "authenticated",
-      app_metadata: { provider: "email" },
-      user_metadata: { full_name: lineUser.name, picture_url: lineUser.picture }
+      sub: anonymousUid,
+      email: `${lineUserId}@line.placeholder.com`,
+      exp: djwt.getNumericDate(60 * 60 * 24 * 7) // 7 วัน
     }
 
     const keyData = new TextEncoder().encode(JWT_SECRET)
-    const cryptoKey = await crypto.subtle.importKey("raw", keyData, { name: "HMAC", hash: "SHA-256" }, false, ["sign"])
-    const accessToken = await djwt.create({ alg: "HS256", typ: "JWT" }, payload, cryptoKey)
+    const cryptoKey = await crypto.subtle.importKey(
+      "raw",
+      keyData,
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    )
+
+    const jwt = await djwt.create({ alg: "HS256", typ: "JWT" }, payload, cryptoKey)
 
     return new Response(
-      JSON.stringify({
-        session: { access_token: accessToken, user: { id: targetUserId, email: email } }
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ session: { access_token: jwt, user: { id: anonymousUid } } }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     )
+
   } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 })
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+    )
   }
 })
