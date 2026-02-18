@@ -168,7 +168,7 @@ export class AuthService {
       .select('*')
       .eq('id', userId)
       .maybeSingle(); // เปลี่ยนจาก .single() เป็น .maybeSingle() เพื่อกัน Error 406
-    
+  
     if (error) {
       console.error('Get Profile Error:', error);
       return null;

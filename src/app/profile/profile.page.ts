@@ -63,26 +63,17 @@ export class ProfilePage implements OnInit {
 
   async ngOnInit() {
     this.isLiffLoading = true;
-    
-    // ให้เวลา Browser หายใจนิดนึง (แก้ Race Condition เบื้องต้น)
-    await new Promise(r => setTimeout(r, 200));
+    await new Promise(r => setTimeout(r, 300)); // ให้เวลา Browser กู้ Session
 
-    // 1. เรียก getCurrentUser ตัวเทพที่เราเพิ่งแก้
-    try {
-      const user = await this.authService.getCurrentUser();
-      
-      if (user) {
-        console.log('⚓ Anchor Secured:', user.id);
-        // ถ้ามี User แล้ว ไม่ต้องทำอะไร ปล่อยให้ initData จัดการต่อ
-      } else {
-        console.log('⚠️ No Session Found -> Creating Anchor...');
-        await this.authService.signInAnonymously();
-      }
-    } catch (e) {
-      console.error('Critical Auth Error:', e);
+    // 1. เช็ค Session เดิมก่อน ถ้ามีแล้ว "ห้ามสร้างใหม่"
+    const user = await this.authService.getCurrentUser();
+    if (user) {
+      console.log('⚓ Anchor Secured:', user.id);
+    } else {
+      // ไม่มีจริงๆ ค่อยสร้าง
+      await this.authService.signInAnonymously();
     }
 
-    // 2. เริ่มโหลดข้อมูลตามปกติ
     await this.initData();
   }
 
@@ -126,48 +117,41 @@ export class ProfilePage implements OnInit {
 
   // ➤ Flow B: ทำงานนอก LINE (External Browser / Desktop)
   private async handleExternalBrowserFlow() {
-    // 1. เช็คว่ากลับมาจาก LINE Login หรือไม่?
-    if (this.lineService.isLoggedIn()) { 
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasCode = urlParams.has('code');
+
+    // 2. ถ้ามี code ใน URL แสดงว่าเพิ่งกลับมาจาก LINE
+    if (hasCode && this.lineService.isLoggedIn()) {
       try {
-        console.log('🔄 Returning from LINE Login...');
+        console.log('🔄 Exchanging LINE Code for Supabase Session...');
         const idToken = liff.getIDToken();
-        
         if (idToken) {
           const user = await this.authService.signInWithLineToken(idToken);
-          console.log('Supabase Exchange Success:', user.id);
-
           const lineProfile = await this.lineService.getProfile();
           await this.finalizeLogin(user, lineProfile);
+
+          // ✅ สำคัญ: ล้าง code ออกจาก URL เพื่อไม่ให้เกิดการ Login ซ้ำตอน Refresh
+          window.history.replaceState({}, document.title, window.location.pathname);
           return;
         }
-      } catch (error: any) {
-  console.error('Line Redirect Error:', error);
-  // ถ้าเป็น 403 Device Mismatch จะได้รู้ครับ
-  const errorMsg = error.message || JSON.stringify(error);
-  alert('เข้าสู่ระบบไม่สำเร็จ: ' + errorMsg); 
-  this.lineService.logout();
-}
+      } catch (error) {
+        console.error('Line Login Error:', error);
+        alert('เข้าสู่ระบบไม่สำเร็จ: ' + (error as any).message);
+      }
     }
 
-    // 2. เช็ค Session ค้าง + ดึง Role จาก DB
-    const user = await this.authService.getCurrentUser();
-    
-    if (user) {
-      this.lineProfile = { 
-        userId: user.id,
-        displayName: user.user_metadata['full_name'] || 'Guest User',
-        pictureUrl: user.user_metadata['picture_url']
-      };
-      
-      // แก้ไข: ดึงข้อมูลจริงจาก DB มาดู Role
-      const dbProfile = await this.authService.getProfile(user.id);
-      if (dbProfile) {
-        this.currentRole = dbProfile.role; // ใช้ role จาก DB เช่น 'host'
-      } else {
-        this.currentRole = (user as any).is_anonymous ? 'guest' : 'user'; 
-      }
-      
+    // 3. ถ้าไม่มี code หรือ Login สำเร็จแล้ว แค่เช็คสถานะปัจจุบัน
+    const currentUser = await this.authService.getCurrentUser();
+    if (currentUser) {
+      const dbProfile = await this.authService.getProfile(currentUser.id);
+      this.currentRole = dbProfile?.role || 'guest';
       this.isLoggedIn = true;
+      
+      this.lineProfile = { 
+        userId: currentUser.id,
+        displayName: currentUser.user_metadata['full_name'] || 'Guest User',
+        pictureUrl: currentUser.user_metadata['picture_url']
+      };
     } else {
       this.isLoggedIn = false;
     }
