@@ -117,37 +117,42 @@ export class ProfilePage implements OnInit {
 
   // ➤ Flow B: ทำงานนอก LINE (External Browser / Desktop)
   private async handleExternalBrowserFlow() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const hasCode = urlParams.has('code');
-
-    // 2. ถ้ามี code ใน URL แสดงว่าเพิ่งกลับมาจาก LINE
-    if (hasCode && this.lineService.isLoggedIn()) {
+    if (this.lineService.isLoggedIn()) {
       try {
-        console.log('🔄 Exchanging LINE Code for Supabase Session...');
+        console.log('🔄 Returning from LINE Login...');
         const idToken = liff.getIDToken();
+
         if (idToken) {
           const user = await this.authService.signInWithLineToken(idToken);
           const lineProfile = await this.lineService.getProfile();
           await this.finalizeLogin(user, lineProfile);
 
-          // ✅ สำคัญ: ล้าง code ออกจาก URL เพื่อไม่ให้เกิดการ Login ซ้ำตอน Refresh
+          // ✅ ล้าง code ออกจาก URL ทันทีที่สำเร็จเพื่อกัน Loop
           window.history.replaceState({}, document.title, window.location.pathname);
           return;
         }
-      } catch (error) {
-        console.error('Line Login Error:', error);
-        alert('เข้าสู่ระบบไม่สำเร็จ: ' + (error as any).message);
+      } catch (error: any) {
+        console.error('Line Redirect Error:', error);
+
+        // ปิด Loading (ถ้ามี)
+        await this.loadingCtrl.dismiss().catch(() => {});
+
+        // แจ้ง Error ให้ชัดเจน
+        alert('เข้าสู่ระบบไม่สำเร็จ: ' + (error.message || 'Device Mismatch'));
+
+        // ล้าง State LINE ทิ้งเพื่อไม่ให้ Auto-Login อีก
+        this.lineService.logout();
       }
     }
 
-    // 3. ถ้าไม่มี code หรือ Login สำเร็จแล้ว แค่เช็คสถานะปัจจุบัน
+    // เช็ค Session ปกติ
     const currentUser = await this.authService.getCurrentUser();
     if (currentUser) {
       const dbProfile = await this.authService.getProfile(currentUser.id);
       this.currentRole = dbProfile?.role || 'guest';
       this.isLoggedIn = true;
-      
-      this.lineProfile = { 
+
+      this.lineProfile = {
         userId: currentUser.id,
         displayName: currentUser.user_metadata['full_name'] || 'Guest User',
         pictureUrl: currentUser.user_metadata['picture_url']
@@ -160,21 +165,22 @@ export class ProfilePage implements OnInit {
   // ปุ่ม Login ด้วย LINE (ใช้ในกรณีผู้ใช้กดเองจาก Landing)
   async loginWithLine() {
     if (this.lineService.isLoggedIn()) {
+      const loading = await this.loadingCtrl.create({ message: 'กำลังซิงค์ข้อมูล...' });
+      await loading.present();
+
       try {
         const idToken = liff.getIDToken();
         if (idToken) {
-          const loading = await this.loadingCtrl.create({ message: 'กำลังซิงค์ข้อมูล...' });
-          await loading.present();
-
           const user = await this.authService.signInWithLineToken(idToken);
           const lineProfile = await this.lineService.getProfile();
           await this.finalizeLogin(user, lineProfile);
-
-          await loading.dismiss();
         }
       } catch (err: any) {
         console.error('Login Error:', err);
-        alert('เข้าสู่ระบบไม่สำเร็จ: ' + err.message);
+        alert('ผิดพลาด: ' + (err.message || 'ไม่สามารถซิงค์ข้อมูลได้'));
+        this.lineService.logout();
+      } finally {
+        await loading.dismiss();
       }
     } else {
       this.lineService.login();
