@@ -159,7 +159,20 @@ export class ProfilePage implements OnInit {
 
   // ปุ่ม Login ด้วย LINE (ใช้ในกรณีผู้ใช้กดเองจาก Landing)
   async loginWithLine() {
-    this.lineService.login();
+    if (this.lineService.isLoggedIn()) {
+      const loading = await this.loadingCtrl.create({ message: 'กำลังยืนยันตัวตน...' });
+      await loading.present();
+      try {
+        await this.handleExternalBrowserFlow();
+      } catch (e) {
+        console.error(e);
+        alert('ยืนยันตัวตนไม่สำเร็จ');
+      } finally {
+        await loading.dismiss();
+      }
+    } else {
+      this.lineService.login();
+    }
   }
 
   // ➤ Action: ปุ่ม Guest / Non-LINE User (บน Landing Page)
