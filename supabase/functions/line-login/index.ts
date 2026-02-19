@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-// ✅ เปลี่ยน Import เป็นตัวนี้ครับ (เสถียรกว่าใน Deno)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.1?target=deno"
 
 const corsHeaders = {
@@ -30,7 +29,7 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
 
-    // 2. จัดการเรื่อง Device Binding (ยึดตาม UID เดิม)
+    // 2. เช็คการผูก Device (Binding)
     const { data: profile } = await supabase
       .from('profiles')
       .select('id, line_user_id')
@@ -44,23 +43,22 @@ serve(async (req) => {
        )
     }
 
-    // อัปเดตข้อมูล Profile
+    // อัปเดต Profile
     await supabase.from('profiles').update({ 
       line_user_id: lineUserId, 
       role: 'visitor' 
     }).eq('id', anonymousUid)
 
-    // 3. 🛡️ หัวใจสำคัญ: สร้าง "Session ของจริง" จาก Supabase Auth
-    // ถ้าฟังก์ชันนี้ไม่มี ให้ใช้ admin.getUserById เช็คก่อนว่า client ต่อติดไหม
-    const { data: sessionData, error: sessionError } = await supabase.auth.admin.createSessionForUser({
-      userId: anonymousUid
-    })
+    // ==========================================
+    // 🛡️ THE FIX: ใช้เทคนิค Password Exchange
+    // ==========================================
+    const targetEmail = `${lineUserId}@line.placeholder.com`
+    const tempPassword = crypto.randomUUID() // สุ่มรหัสผ่าน
 
-    if (sessionError) throw sessionError;
-
-    // อัปเดต Auth ให้เลิกเป็น Anonymous (ใส่ Email/Metadata)
+    // 3. ยัด Email และ รหัสผ่านสุ่ม เข้าไปใน User ด้วย Admin API
     await supabase.auth.admin.updateUserById(anonymousUid, {
-      email: `${lineUserId}@line.placeholder.com`,
+      email: targetEmail,
+      password: tempPassword,
       email_confirm: true,
       user_metadata: { 
         full_name: verifiedData.name, 
@@ -68,9 +66,17 @@ serve(async (req) => {
       }
     })
 
-    // ✅ คืนค่า Session จริงที่ Server ออกให้ (Refresh ยังไงก็ไม่หลุด)
+    // 4. สั่ง Login ด้วยรหัสผ่านสุ่มที่เพิ่งตั้ง เพื่อขอ Session ของแท้!
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email: targetEmail,
+      password: tempPassword
+    })
+
+    if (authError) throw authError;
+
+    // 5. ส่ง Session ของแท้กลับไปให้หน้าบ้าน (Refresh ยังไงก็ไม่หลุด)
     return new Response(
-      JSON.stringify({ session: sessionData.session }),
+      JSON.stringify({ session: authData.session }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     )
 

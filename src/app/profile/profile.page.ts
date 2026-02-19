@@ -160,15 +160,21 @@ export class ProfilePage implements OnInit {
   // ปุ่ม Login ด้วย LINE (ใช้ในกรณีผู้ใช้กดเองจาก Landing)
   async loginWithLine() {
     if (this.lineService.isLoggedIn()) {
-      const loading = await this.loadingCtrl.create({ message: 'กำลังยืนยันตัวตน...' });
-      await loading.present();
       try {
-        await this.handleExternalBrowserFlow();
-      } catch (e) {
-        console.error(e);
-        alert('ยืนยันตัวตนไม่สำเร็จ');
-      } finally {
-        await loading.dismiss();
+        const idToken = liff.getIDToken();
+        if (idToken) {
+          const loading = await this.loadingCtrl.create({ message: 'กำลังซิงค์ข้อมูล...' });
+          await loading.present();
+
+          const user = await this.authService.signInWithLineToken(idToken);
+          const lineProfile = await this.lineService.getProfile();
+          await this.finalizeLogin(user, lineProfile);
+
+          await loading.dismiss();
+        }
+      } catch (err: any) {
+        console.error('Login Error:', err);
+        alert('เข้าสู่ระบบไม่สำเร็จ: ' + err.message);
       }
     } else {
       this.lineService.login();
